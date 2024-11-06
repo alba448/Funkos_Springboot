@@ -4,7 +4,6 @@ package example.demo.categoria.service;
 import example.demo.categoria.dto.CategoriaDto;
 import example.demo.categoria.mappers.CategoriaMapper;
 import example.demo.categoria.model.Categoria;
-import example.demo.categoria.model.TipoCategoria;
 import example.demo.categoria.repository.CategoriaRepository;
 import example.demo.categoria.validators.CategoriaValidator;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +51,7 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Override
     @Cacheable(key = "#nombre")
-    public Categoria getByNombre(TipoCategoria nombre) {
+    public Categoria getByNombre(String nombre) {
         log.info("Buscando categoria llamada: {}", nombre);
         return repository.findByNombre(nombre).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "La categoria " + nombre + " no existe")

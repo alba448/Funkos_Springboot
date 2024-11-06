@@ -1,7 +1,6 @@
 package example.demo.categoria.validators;
 
-import example.demo.categoria.model.TipoCategoria;
-
+import example.demo.categoria.repository.CategoriaRepository;
 import org.springframework.stereotype.Component;
 
 
@@ -9,12 +8,14 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class CategoriaValidator {
-    public boolean isNombreCategoriaValido(String nombre) {
-        try {
-            TipoCategoria.valueOf(nombre);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
+
+    private final CategoriaRepository categoriaRepository;
+
+    public CategoriaValidator(CategoriaRepository categoriaRepository) {
+        this.categoriaRepository = categoriaRepository;
+    }
+
+    public boolean isNameUnique(String nombre) {
+        return categoriaRepository.findByNombre(nombre).isEmpty();
     }
 }

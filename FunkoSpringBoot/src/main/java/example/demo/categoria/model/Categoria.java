@@ -22,7 +22,7 @@ public class Categoria {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "nombre", nullable = false, unique = true)
-    private TipoCategoria nombre;
+    private String nombre;
 
     @Column(name = "created_at")
     @CreatedDate

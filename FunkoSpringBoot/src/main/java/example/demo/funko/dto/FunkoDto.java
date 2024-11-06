@@ -2,7 +2,6 @@ package example.demo.funko.dto;
 
 
 
-import example.demo.categoria.model.TipoCategoria;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
