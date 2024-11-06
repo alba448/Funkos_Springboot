@@ -8,12 +8,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
-
 import example.demo.storage.controllers.StorageController;
-import example.demo.storage.exceptions.StorageBadRequest;
-import example.demo.storage.exceptions.StorageInternal;
+import example.demo.storage.exceptions.StorageException;
 import example.demo.storage.exceptions.StorageNotFound;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -27,14 +26,22 @@ import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBui
 @Slf4j
 public class StorageServiceImpl implements StorageService {
 
-
     private final Path rootLocation;
 
-
+    @Autowired
     public StorageServiceImpl(@Value("${upload.root-location}") String path) {
         this.rootLocation = Paths.get(path);
     }
 
+    @Override
+    public void init() {
+        log.info("Inicializando almacenamiento");
+        try {
+            Files.createDirectories(rootLocation);
+        } catch (IOException e) {
+            throw new StorageException("No se puede inicializar el almacenamiento " + e);
+        }
+    }
 
     @Override
     public String store(MultipartFile file) {
@@ -45,11 +52,10 @@ public class StorageServiceImpl implements StorageService {
 
         try {
             if (file.isEmpty()) {
-                throw new StorageBadRequest("Fichero vacío " + filename);
+                throw new StorageNotFound("Fichero vacío " + filename);
             }
             if (filename.contains("..")) {
-
-                throw new StorageBadRequest(
+                throw new StorageNotFound(
                         "No se puede almacenar un fichero con una ruta relativa fuera del directorio actual "
                                 + filename);
             }
@@ -62,11 +68,9 @@ public class StorageServiceImpl implements StorageService {
             }
 
         } catch (IOException e) {
-            throw new StorageInternal("Fallo al almacenar fichero " + filename + " " + e);
+            throw new StorageException("Fallo al almacenar fichero " + filename + " " + e);
         }
-
     }
-
 
     @Override
     public Stream<Path> loadAll() {
@@ -76,19 +80,15 @@ public class StorageServiceImpl implements StorageService {
                     .filter(path -> !path.equals(this.rootLocation))
                     .map(this.rootLocation::relativize);
         } catch (IOException e) {
-            throw new StorageInternal("Fallo al leer ficheros almacenados " + e);
+            throw new StorageException("Fallo al leer ficheros almacenados " + e);
         }
-
     }
-
 
     @Override
     public Path load(String filename) {
         log.info("Cargando fichero " + filename);
         return rootLocation.resolve(filename);
     }
-
-
 
     @Override
     public Resource loadAsResource(String filename) {
@@ -99,33 +99,12 @@ public class StorageServiceImpl implements StorageService {
             if (resource.exists() || resource.isReadable()) {
                 return resource;
             } else {
-                throw new StorageNotFound("No se puede leer fichero: " + filename);
+                throw new StorageNotFound("No se puede leer ficheroooo: " + filename);
             }
         } catch (MalformedURLException e) {
-            throw new StorageNotFound("No se puede leer fichero: " + filename + " " + e);
+            throw new StorageException("Error al cargar fichero " + filename + " " + e);
         }
     }
-
-
-
-    @Override
-    public void deleteAll() {
-        log.info("Eliminando todos los ficheros almacenados");
-        FileSystemUtils.deleteRecursively(rootLocation.toFile());
-    }
-
-
-
-    @Override
-    public void init() {
-        log.info("Inicializando almacenamiento");
-        try {
-            Files.createDirectories(rootLocation);
-        } catch (IOException e) {
-            throw new StorageInternal("No se puede inicializar el almacenamiento " + e);
-        }
-    }
-
 
     @Override
     public void delete(String filename) {
@@ -135,19 +114,21 @@ public class StorageServiceImpl implements StorageService {
             Path file = load(justFilename);
             Files.deleteIfExists(file);
         } catch (IOException e) {
-            throw new StorageInternal("No se puede eliminar el fichero " + filename + " " + e);
+            throw new StorageException("No se puede eliminar el fichero " + filename + " " + e);
         }
-
     }
 
+    @Override
+    public void deleteAll() {
+        log.info("Eliminando todos los ficheros almacenados");
+        FileSystemUtils.deleteRecursively(rootLocation.toFile());
+    }
 
     @Override
     public String getUrl(String filename) {
         log.info("Obteniendo URL del fichero " + filename);
         return MvcUriComponentsBuilder
-
                 .fromMethodName(StorageController.class, "serveFile", filename, null)
                 .build().toUriString();
     }
-
 }
