@@ -77,15 +77,14 @@ class StorageServiceImplTest {
         assertThrows(StorageNotFound.class, () -> storageServiceImpl.store(multipartFile));
     }
 
-    @Order(1)
     @Test
     void loadAll() throws IOException {
         Files.createDirectories(mockRootLocation);
-        Files.createFile(mockRootLocation.resolve("test-image2.png"));
 
         Stream<Path> files = storageServiceImpl.loadAll();
-        assertEquals(3, files.count());
+        assertEquals(2, files.count());
     }
+
 
     @Test
     void load() {

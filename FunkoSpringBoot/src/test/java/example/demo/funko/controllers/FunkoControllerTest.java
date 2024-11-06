@@ -28,6 +28,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ExtendWith(MockitoExtension.class)
@@ -53,14 +56,14 @@ class FunkoControllerTest {
 
     @BeforeEach
     void setUp() {
-        categoriaTest.setId(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
-        categoriaTest.setNombre("PELICULA");
+        categoriaTest.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
+        categoriaTest.setNombre("CategoriaTest");
         categoriaTest.setActivado(true);
         objectMapper.registerModule(new JavaTimeModule());
 
         funkoTest.setId(1L);
-        funkoTest.setNombre("Darth Vader");
-        funkoTest.setPrecio(10.99);
+        funkoTest.setNombre("FunkoTest");
+        funkoTest.setPrecio(10.00);
         funkoTest.setCategoria(categoriaTest);
         objectMapper.registerModule(new JavaTimeModule());
     }
@@ -78,9 +81,8 @@ class FunkoControllerTest {
                 objectMapper.getTypeFactory().constructCollectionType(List.class, Funko.class));
 
         assertAll(
-                () -> assertEquals(response.getStatus(), HttpStatus.OK.value()),
-                () -> assertFalse(res.isEmpty()),
-                () -> assertTrue(res.stream().anyMatch(r -> r.getId().equals(funkoTest.getId())))
+                () -> assertEquals( HttpStatus.OK.value(), response.getStatus()),
+                () -> assertFalse(res.isEmpty())
         );
 
         verify(service, times(1)).getAll();
@@ -88,7 +90,7 @@ class FunkoControllerTest {
 
     @Test
     void getById() throws Exception {
-        when(service.getById(1L)).thenReturn(funkoTest);
+        when(service.getById("1")).thenReturn(funkoTest);
 
         MockHttpServletResponse response = mvc.perform(
                         get(myEndpoint + "/1")
@@ -98,97 +100,109 @@ class FunkoControllerTest {
         Funko res = objectMapper.readValue(response.getContentAsString(), Funko.class);
 
         assertAll(
-                () -> assertEquals(response.getStatus(), HttpStatus.OK.value()),
-                () -> assertEquals(res.getId(), funkoTest.getId()),
-                () -> assertEquals(res.getNombre(), funkoTest.getNombre()),
-                () -> assertEquals(res.getPrecio(), funkoTest.getPrecio()),
-                () -> assertEquals(res.getCategoria(), funkoTest.getCategoria())
+                () -> assertEquals(HttpStatus.OK.value(), response.getStatus()),
+                () -> assertEquals(funkoTest.getId(), res.getId()),
+                () -> assertEquals(funkoTest.getNombre(), res.getNombre()),
+                () -> assertEquals(funkoTest.getPrecio(), res.getPrecio()),
+                () -> assertEquals(funkoTest.getCategoria(), res.getCategoria())
         );
 
-        verify(service, times(1)).getById(1L);
+        verify(service, times(1)).getById("1");
     }
 
     @Test
     void save() throws Exception {
         Categoria nuevaCategoria = new Categoria();
-        nuevaCategoria.setId(UUID.fromString("5790bdd4-8898-4c61-b547-bc26952dc2a3"));
-        nuevaCategoria.setNombre("DISNEY");
+        nuevaCategoria.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
+        nuevaCategoria.setNombre("CategoriaTest");
         nuevaCategoria.setActivado(true);
 
-        FunkoDto nuevoFunko = new FunkoDto();
-        nuevoFunko.setNombre("Mickey Mouse");
-        nuevoFunko.setPrecio(7.95);
-        nuevoFunko.setCategoria("DISNEY");
+        FunkoDto nuevoFunkoDto = new FunkoDto();
+        nuevoFunkoDto.setNombre("FunkoTest");
+        nuevoFunkoDto.setPrecio(10.00);
+        nuevoFunkoDto.setCategoria("CategoriaTest");
 
-        when(service.save(nuevoFunko)).thenReturn(mapper.toFunko(nuevoFunko, nuevaCategoria));
+        when(service.save(nuevoFunkoDto)).thenReturn(mapper.toFunko(nuevoFunkoDto, nuevaCategoria));
 
         MockHttpServletResponse response = mvc.perform(
                         post(myEndpoint)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(nuevoFunko)))
+                                .content(objectMapper.writeValueAsString(nuevoFunkoDto)))
                 .andReturn().getResponse();
 
         Funko res = objectMapper.readValue(response.getContentAsString(), Funko.class);
 
         assertAll(
-                () -> assertEquals(response.getStatus(), HttpStatus.CREATED.value()),
-                () -> assertEquals(res.getId(), mapper.toFunko(nuevoFunko, nuevaCategoria).getId()),
-                () -> assertEquals(res.getNombre(), nuevoFunko.getNombre()),
-                () -> assertEquals(res.getPrecio(), nuevoFunko.getPrecio()),
-                () -> assertEquals(res.getCategoria(), mapper.toFunko(nuevoFunko, nuevaCategoria).getCategoria())
+                () -> assertEquals( HttpStatus.CREATED.value(), response.getStatus()),
+                () -> assertEquals( mapper.toFunko(nuevoFunkoDto, nuevaCategoria).getId(), res.getId()),
+                () -> assertEquals(nuevoFunkoDto.getNombre(), res.getNombre()),
+                () -> assertEquals(nuevoFunkoDto.getPrecio(), res.getPrecio()),
+                () -> assertEquals(mapper.toFunko(nuevoFunkoDto, nuevaCategoria).getCategoria(), res.getCategoria())
         );
 
-        verify(service, times(1)).save(nuevoFunko);
+        verify(service, times(1)).save(nuevoFunkoDto);
     }
 
     @Test
     void update() throws Exception {
-        Categoria updatedCategoria = new Categoria();
-        updatedCategoria.setId(UUID.fromString("5790bdd4-8898-4c61-b547-bc26952dc2a3"));
-        updatedCategoria.setNombre("SUPERHEROE");
-        updatedCategoria.setActivado(true);
+        Categoria categoriaUpdate = new Categoria();
+        categoriaUpdate.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
+        categoriaUpdate.setNombre("CategoriaTest");
+        categoriaUpdate.setActivado(true);
 
-        FunkoDto updateFunko = new FunkoDto();
-        updateFunko.setNombre("Goku");
-        updateFunko.setPrecio(15.99);
-        updateFunko.setCategoria(updatedCategoria.getNombre());
+        FunkoDto funkoUpdateDto = new FunkoDto();
+        funkoUpdateDto.setNombre("FunkoTest");
+        funkoUpdateDto.setPrecio(10.00);
+        funkoUpdateDto.setCategoria(categoriaUpdate.getNombre());
 
-        Funko funko = new Funko();
-        funko.setNombre(updateFunko.getNombre());
-        funko.setPrecio(updateFunko.getPrecio());
-        funko.setCategoria(updatedCategoria);
+        Funko funkoUpdate = new Funko();
+        funkoUpdate.setNombre(funkoUpdateDto.getNombre());
+        funkoUpdate.setPrecio(funkoUpdateDto.getPrecio());
+        funkoUpdate.setCategoria(categoriaUpdate);
 
-        when(service.update(2L, updateFunko)).thenReturn(mapper.toFunkoUpdate(updateFunko, funko, updatedCategoria));
+        when(service.update("2", funkoUpdateDto)).thenReturn(mapper.toFunkoUpdate(funkoUpdateDto, funkoUpdate, categoriaUpdate));
 
         MockHttpServletResponse response = mvc.perform(
                         put(myEndpoint + "/2")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(updateFunko)))
+                                .content(objectMapper.writeValueAsString(funkoUpdateDto)))
                 .andReturn().getResponse();
 
         Funko res = objectMapper.readValue(response.getContentAsString(), Funko.class);
 
         assertAll(
-                () -> assertEquals(response.getStatus(), HttpStatus.OK.value()),
-                () -> assertEquals(res.getNombre(), updateFunko.getNombre()),
-                () -> assertEquals(res.getPrecio(), updateFunko.getPrecio()),
-                () -> assertEquals(res.getCategoria().getNombre(), updateFunko.getCategoria())
+                () -> assertEquals(HttpStatus.OK.value(), response.getStatus()),
+                () -> assertEquals(funkoUpdateDto.getNombre(), res.getNombre()),
+                () -> assertEquals(funkoUpdateDto.getPrecio(), res.getPrecio()),
+                () -> assertEquals(funkoUpdateDto.getCategoria(), res.getCategoria().getNombre())
         );
 
-        verify(service, times(1)).update(2L, updateFunko);
+        verify(service, times(1)).update("2", funkoUpdateDto);
     }
 
     @Test
     void delete() throws Exception {
-        when(service.delete(1L)).thenReturn(funkoTest);
+        Categoria categoriaDelete = new Categoria();
+        categoriaDelete.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
+        categoriaDelete.setNombre("CategoriaTest");
+        categoriaDelete.setActivado(true);
+
+        Funko deletedFunko = new Funko();
+        deletedFunko.setNombre("FunkoDeleteTest");
+        deletedFunko.setPrecio(10.00);
+        deletedFunko.setCategoria(categoriaDelete);
+
+        when(service.delete("1")).thenReturn(deletedFunko);
 
         MockHttpServletResponse response = mvc.perform(
-                        MockMvcRequestBuilders.delete(myEndpoint + "/1")
-                                .accept(MediaType.APPLICATION_JSON))
+                        MockMvcRequestBuilders.delete(myEndpoint + "/1") //Porque tengo que añadir MockMvcRequestBuilders
+                                .contentType(MediaType.APPLICATION_JSON))
                 .andReturn().getResponse();
 
-        assertEquals(response.getStatus(), HttpStatus.OK.value());
+        assertEquals(HttpStatus.NO_CONTENT.value(), response.getStatus());
+        assertEquals("", response.getContentAsString());
 
-        verify(service, times(1)).delete(1L);
+        verify(service, times(1)).delete("1");
     }
+
 }

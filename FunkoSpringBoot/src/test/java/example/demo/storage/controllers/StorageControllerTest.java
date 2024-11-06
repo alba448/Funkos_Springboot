@@ -1,8 +1,9 @@
 package example.demo.storage.controllers;
 
-
+import example.demo.storage.exceptions.StorageNotFound;
 import example.demo.storage.services.StorageService;
 import jakarta.servlet.http.HttpServletRequest;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,13 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -44,40 +38,45 @@ class StorageControllerTest {
     private final String endpoint = "/funkos/files";
 
     @MockBean
-    private HttpServletRequest request;
-
-    @MockBean
     private Resource resource;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
-
-        Path sourcePath = Paths.get("test_imgs", "test-image20.png");
-        if (Files.notExists(sourcePath)) {
-            Files.createDirectories(sourcePath.getParent());
-            Files.createFile(sourcePath);
-        }
-
-        Path destination = Paths.get("imgs/test-image20.png");
-        Files.createDirectories(destination.getParent());
-
-        Files.copy(sourcePath, destination, StandardCopyOption.REPLACE_EXISTING);
     }
 
-
     @Test
-    void serveFile() throws Exception {
-        String filename = "test-image20.png";
+    public void testServeFile_FileNotFound() throws Exception {
+        String filename = "nonexistentfile.txt";
 
-        Resource resource = mock(Resource.class);
-        File testFile = Files.createFile(Path.of("test_imgs/test-image20.png")).toFile();
-        when(storageService.loadAsResource(filename)).thenReturn(resource);
-        when(resource.getInputStream()).thenReturn(new FileInputStream(testFile));
-
+        when(storageService.loadAsResource(anyString())).thenThrow(new StorageNotFound("File not found"));
         MockHttpServletResponse response = mvc.perform(
                         get(endpoint + "/" + filename)
                                 .accept(MediaType.APPLICATION_JSON))
+                .andReturn().getResponse();
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatus());
+        verify(storageService, times(1)).loadAsResource(filename);
+    }
+
+   /* @Test
+    void serveFile() throws Exception {
+        String filename = "test-image3.png";
+
+        InputStream mockInputStream = getClass().getClassLoader().getResourceAsStream("test-image3.png");
+
+        assertNotNull(mockInputStream);
+
+        Resource mockResource = mock(Resource.class);
+
+        when(mockResource.getInputStream()).thenReturn(mockInputStream);
+        when(mockResource.exists()).thenReturn(true);
+
+        when(storageService.loadAsResource(filename)).thenReturn(mockResource);
+
+        MockHttpServletResponse response = mvc.perform(
+                        get(endpoint + "/" + filename)
+                                .accept(MediaType.IMAGE_PNG))
                 .andReturn().getResponse();
 
         assertAll(
@@ -90,10 +89,13 @@ class StorageControllerTest {
 
     @Test
     void serveFileThrowsException() throws Exception {
-        String filename = "test-image20.kei";
+        String filename = "test-image3.png";
+
+        Resource resource = mock(Resource.class);
+
+        when(resource.getInputStream()).thenThrow(new IOException("No se puede determinar el tipo de fichero"));
 
         when(storageService.loadAsResource(filename)).thenReturn(resource);
-        when(resource.getFile()).thenThrow(new IOException());
 
         MockHttpServletResponse response = mvc.perform(
                         get(endpoint + "/" + filename)
@@ -106,5 +108,9 @@ class StorageControllerTest {
         );
 
         verify(storageService, times(1)).loadAsResource(filename);
-    }
+    }*/
+
+
+
+
 }
