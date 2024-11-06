@@ -15,13 +15,10 @@ public class StorageConfig {
     @Bean
     public CommandLineRunner init(StorageService storageService, @Value("${upload.delete}") String deleteAll) {
         return args -> {
-
-
             if (deleteAll.equals("true")) {
                 log.info("Borrando ficheros de almacenamiento...");
                 storageService.deleteAll();
             }
-
             storageService.init();
         };
     }

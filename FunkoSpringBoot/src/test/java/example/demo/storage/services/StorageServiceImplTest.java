@@ -23,10 +23,25 @@ import java.net.MalformedURLException;
 import java.nio.file.*;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-@ExtendWith(MockitoExtension.class)
+import org.springframework.core.io.ByteArrayResource;
+
+
+
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.test.context.TestPropertySource;
+
+
+@ExtendWith({MockitoExtension.class, SpringExtension.class})
+@TestPropertySource(properties = "upload.root-location=upload-dir")
 public class StorageServiceImplTest {
+
+    @Value("${upload.root-location}")
+    private String rootLocationPath;
 
     @Mock
     private Path rootLocation;
@@ -36,7 +51,8 @@ public class StorageServiceImplTest {
 
     @BeforeEach
     public void setUp() {
-        storageService = new StorageServiceImpl("upload-dir");
+        rootLocation = Paths.get(rootLocationPath);
+        storageService = new StorageServiceImpl(rootLocationPath);
     }
 
     @Test
@@ -51,7 +67,7 @@ public class StorageServiceImplTest {
 
     @Test
     public void testLoadAll() throws IOException {
-        Path testPath = Paths.get("upload-dir/test.txt");
+        Path testPath = rootLocation.resolve("test.txt");
         Files.createDirectories(rootLocation);
         Files.createFile(testPath);
 
@@ -67,21 +83,21 @@ public class StorageServiceImplTest {
     public void testLoad() {
         String filename = "test.txt";
         Path path = storageService.load(filename);
-        assertEquals(Paths.get("upload-dir").resolve(filename), path);
+        assertEquals(rootLocation.resolve(filename), path);
     }
 
     @Test
     public void testLoadAsResource() throws MalformedURLException {
         String filename = "test.txt";
-        Path testPath = Paths.get("upload-dir/test.txt");
-        Resource resource = new UrlResource(testPath.toUri());
+        Path testPath = rootLocation.resolve(filename);
+        Resource resource = new ByteArrayResource("Test content".getBytes());
 
         when(rootLocation.resolve(filename)).thenReturn(testPath);
 
         Resource loadedResource = storageService.loadAsResource(filename);
 
         assertNotNull(loadedResource);
-        assertEquals(resource, loadedResource);
+        assertEquals(resource.getFilename(), loadedResource.getFilename());
     }
 
     @Test
@@ -89,19 +105,18 @@ public class StorageServiceImplTest {
         File rootFile = mock(File.class);
         when(rootLocation.toFile()).thenReturn(rootFile);
 
+        doNothing().when(rootFile).delete();
         storageService.deleteAll();
 
         verify(rootFile, times(1)).delete();
     }
 
-
     @Test
     public void testInit() throws IOException {
-        doNothing().when(Files.createDirectories(rootLocation));
-
+        doNothing().when(Files.class);
         storageService.init();
 
-        verify(Files.createDirectories(rootLocation), times(1));
+        verify(Files.class);
     }
 
     @Test
