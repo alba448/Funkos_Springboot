@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class FunkoValidator {
 
-    private final FunkoRepository funkoRepository; // Inyecta el repositorio de Funkos
+    private final FunkoRepository funkoRepository;
 
     public FunkoValidator(FunkoRepository funkoRepository) {
         this.funkoRepository = funkoRepository;
