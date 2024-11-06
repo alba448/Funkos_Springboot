@@ -115,12 +115,17 @@ class StorageServiceImplTest {
 
     @Test
     void deleteAll() throws IOException {
+
         Files.createDirectories(mockRootLocation);
         Files.createFile(mockRootLocation.resolve("test-image10.png"));
         Files.createFile(mockRootLocation.resolve("test-image11.png"));
 
+
         storageServiceImpl.deleteAll();
         assertEquals(0, Files.list(mockRootLocation).count());
+
+
+        assertTrue(Files.exists(mockRootLocation));
     }
 
     @Test
