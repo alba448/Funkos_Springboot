@@ -17,38 +17,37 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
-public class CategoriaValidatorTest {
+class CategoriaValidatorTest {
 
     @Mock
-    private CategoriaRepository categoriaRepository;
+    private CategoriaRepository repository;
 
     @InjectMocks
     private CategoriaValidator categoriaValidator;
 
-    @BeforeEach
-    void setUp() {
-        categoriaValidator = new CategoriaValidator(categoriaRepository);
-    }
-
     @Test
-    void testIsNameUnique_WhenNameIsUnique() {
-        String nombre = "UniqueCategoria";
-        when(categoriaRepository.findByNombre(nombre)).thenReturn(Optional.empty());
+    void isNameUnique() {
+        String nombre = "CategoriaNueva";
+
+        when(repository.findByNombre(nombre)).thenReturn(Optional.empty());
 
         boolean result = categoriaValidator.isNameUnique(nombre);
 
-        assertTrue(result, "El nombre no es único.");
-        verify(categoriaRepository, times(1)).findByNombre(nombre);
+        assertTrue(result);
+
+        verify(repository, times(1)).findByNombre(nombre);
     }
 
     @Test
-    void testIsNameUnique_WhenNameIsNotUnique() {
-        String nombre = "ExistingCategoria";
-        when(categoriaRepository.findByNombre(nombre)).thenReturn(Optional.of(new Categoria()));
+    void isNameUniqueFalse() {
+        String nombre = "CategoriaExistente";
+
+        when(repository.findByNombre(nombre)).thenReturn(Optional.of(new Categoria()));
 
         boolean result = categoriaValidator.isNameUnique(nombre);
 
-        assertFalse(result, "El nombre no es único.");
-        verify(categoriaRepository, times(1)).findByNombre(nombre);
+        assertFalse(result);
+
+        verify(repository, times(1)).findByNombre(nombre);
     }
 }

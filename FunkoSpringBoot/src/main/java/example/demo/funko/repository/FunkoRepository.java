@@ -10,5 +10,6 @@ import java.util.Optional;
 
 @Repository
 public interface FunkoRepository extends JpaRepository<Funko, Long> {
-    Optional<Funko> findByNombre(String nombre);
+    Optional<Funko> findById(Long id);
+    Funko save(Funko funko);
 }

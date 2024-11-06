@@ -14,12 +14,12 @@ class CategoriaMapperTest {
     private final CategoriaMapper mapper = new CategoriaMapper();
 
     @Test
-    void toCategoria() {
+    void fromDto() {
         CategoriaDto categoriaDto = new CategoriaDto();
-        categoriaDto.setNombre("CATEGORIATEST");
+        categoriaDto.setNombre("DISNEY");
         categoriaDto.setActivado(true);
 
-        var res = mapper.toCategoria(categoriaDto);
+        var res = mapper.fromDto(categoriaDto);
 
         assertAll(
                 () -> assertEquals(categoriaDto.getNombre(), res.getNombre()),
@@ -28,20 +28,20 @@ class CategoriaMapperTest {
     }
 
     @Test
-    void toCategoriaUpdate() {
+    void toCategoria() {
         CategoriaDto categoriaDto = new CategoriaDto();
-        categoriaDto.setNombre("CATEGORIATEST");
+        categoriaDto.setNombre("DISNEY");
         categoriaDto.setActivado(true);
 
         Categoria categoria = new Categoria(
                 null,
-                "CATEGORIATEST",
+                "DISNEY",
                 LocalDateTime.now(),
                 LocalDateTime.now(),
                 categoriaDto.getActivado()
         );
 
-        var res = mapper.toCategoriaUpdate(categoriaDto, categoria);
+        var res = mapper.toCategoria(categoriaDto, categoria);
 
         assertAll(
                 () -> assertNull(res.getId()),

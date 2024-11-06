@@ -22,6 +22,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+
 @ExtendWith(MockitoExtension.class)
 class CategoriaServiceImplTest {
     @Mock
@@ -41,8 +42,8 @@ class CategoriaServiceImplTest {
     @BeforeEach
     void setUp() {
         categoriaTest = new Categoria();
-        categoriaTest.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
-        categoriaTest.setNombre("CategoriaTest");
+        categoriaTest.setId(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
+        categoriaTest.setNombre("DISNEY");
         categoriaTest.setActivado(true);
     }
 
@@ -55,8 +56,8 @@ class CategoriaServiceImplTest {
         assertAll(
                 () -> assertEquals(1, result.size()),
                 () -> assertTrue(result.contains(categoriaTest)),
-                () -> assertEquals("CategoriaTest", result.getFirst().getNombre()),
-                () -> assertTrue(result.getFirst().getActivado())
+                () -> assertEquals("DISNEY", result.get(0).getNombre()),
+                () -> assertTrue(result.get(0).getActivado())
         );
 
         verify(repository, times(1)).findAll();
@@ -64,64 +65,46 @@ class CategoriaServiceImplTest {
 
     @Test
     void getById() {
-        when(validator.isIdValid("4182d617-ec89-4fbc-be95-85e461778766")).thenReturn(true);
-        when(repository.findById(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"))).thenReturn(Optional.of(categoriaTest));
+        when(repository.findById(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"))).thenReturn(Optional.of(categoriaTest));
 
-        var result = service.getById("4182d617-ec89-4fbc-be95-85e461778766");
+        var result = service.getById(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
 
         assertAll(
                 () -> assertNotNull(result),
-                () -> assertEquals("CategoriaTest", result.getNombre()),
+                () -> assertEquals("DISNEY", result.getNombre()),
                 () -> assertTrue(result.getActivado())
         );
 
-        verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778766");
-        verify(repository, times(1)).findById(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
+        verify(repository, times(1)).findById(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
     }
 
     @Test
     void getByIdNotFound() {
-        when(validator.isIdValid("4182d617-ec89-4fbc-be95-85e461778700")).thenReturn(true);
         when(repository.findById(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778700"))).thenReturn(Optional.empty());
 
         ResponseStatusException thrown = assertThrows(
-                ResponseStatusException.class, () -> service.getById("4182d617-ec89-4fbc-be95-85e461778700")
+                ResponseStatusException.class, () -> service.getById(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778700"))
         );
 
         assertEquals(HttpStatus.NOT_FOUND, thrown.getStatusCode());
-        assertEquals("No existe la categoria con id 4182d617-ec89-4fbc-be95-85e461778700", thrown.getReason());
+        assertEquals("La categoria con id 4182d617-ec89-4fbc-be95-85e461778700 no se ha encontrado.", thrown.getReason());
 
-        verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778700");
         verify(repository, times(1)).findById(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778700"));
     }
 
     @Test
-    void getByIdNotValid() {
-        when(validator.isIdValid("4182d617-ec89-4f")).thenReturn(false);
-
-        ResponseStatusException thrown = assertThrows(
-                ResponseStatusException.class, () -> service.getById("4182d617-ec89-4f")
-        );
-
-        assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
-        assertEquals("La id no es válida. Debe ser un UUID", thrown.getReason());
-
-        verify(validator, times(1)).isIdValid("4182d617-ec89-4f");
-    }
-
-    @Test
     void getByNombre() {
-        when(repository.findByNombre("CategoriaTest")).thenReturn(Optional.ofNullable(categoriaTest));
+        when(repository.findByNombre("DISNEY")).thenReturn(Optional.ofNullable(categoriaTest));
 
-        var result = service.getByNombre("CategoriaTest");
+        var result = service.getByNombre("DISNEY");
 
         assertAll(
                 () -> assertNotNull(result),
-                () -> assertEquals("CategoriaTest", result.getNombre()),
+                () -> assertEquals("DISNEY", result.getNombre()),
                 () -> assertTrue(result.getActivado())
         );
 
-        verify(repository, times(1)).findByNombre("CategoriaTest");
+        verify(repository, times(1)).findByNombre("DISNEY");
     }
 
     @Test
@@ -140,91 +123,64 @@ class CategoriaServiceImplTest {
 
     @Test
     void save() {
-        CategoriaDto nuevaCategoriaDto = new CategoriaDto();
-        nuevaCategoriaDto.setNombre("CategoriaTest");
-        nuevaCategoriaDto.setActivado(true);
-
-        Categoria nuevaCategoria = new Categoria();
-        nuevaCategoria.setNombre("CategoriaTest");
+        CategoriaDto nuevaCategoria = new CategoriaDto();
+        nuevaCategoria.setNombre("DISNEY");
         nuevaCategoria.setActivado(true);
 
-        when(validator.isNameUnique(nuevaCategoriaDto.getNombre())).thenReturn(true);
-        when(mapper.toCategoria(nuevaCategoriaDto)).thenReturn(nuevaCategoria);
-        when(repository.save(nuevaCategoria)).thenReturn(nuevaCategoria);
+        Categoria categoria = new Categoria();
+        categoria.setNombre(nuevaCategoria.getNombre());
+        categoria.setActivado(nuevaCategoria.getActivado());
 
-        var result = service.save(nuevaCategoriaDto);
+        when(validator.isNameUnique(nuevaCategoria.getNombre())).thenReturn(true);
+        when(mapper.fromDto(nuevaCategoria)).thenReturn(categoria);
+        when(repository.save(categoria)).thenReturn(categoria);
+
+        var result = service.save(nuevaCategoria);
 
         assertAll(
                 () -> assertNotNull(result),
-                () -> assertEquals("CategoriaTest", result.getNombre()),
+                () -> assertEquals("DISNEY", result.getNombre()),
                 () -> assertTrue(result.getActivado())
         );
 
-        verify(validator, times(1)).isNameUnique(nuevaCategoriaDto.getNombre());
-        verify(repository, times(1)).save(nuevaCategoria);
-        verify(mapper, times(2)).toCategoria(nuevaCategoriaDto);
+        verify(repository, times(1)).save(categoria);
+        verify(mapper, times(1)).fromDto(nuevaCategoria);
     }
 
     @Test
     void update() {
-        UUID id = UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766");
-        CategoriaDto categoriaUpdateDto = new CategoriaDto();
-        categoriaUpdateDto.setNombre("CategoriaTestUpdate");
-        categoriaUpdateDto.setActivado(true);
+        UUID id = UUID.randomUUID();
+        CategoriaDto updatedCategoria = new CategoriaDto();
+        updatedCategoria.setId(id);
+        updatedCategoria.setNombre("SUPERHEROES");
+        updatedCategoria.setActivado(true);
 
         Categoria categoriaExistente = new Categoria();
         categoriaExistente.setId(id);
-        categoriaExistente.setNombre("CategoriaTest");
+        categoriaExistente.setNombre("OLD_NAME");
         categoriaExistente.setActivado(true);
 
-        Categoria categoriaUpdate = new Categoria();
-        categoriaUpdate.setId(id);
-        categoriaUpdate.setNombre("CategoriaTestUpdate");
-        categoriaUpdate.setActivado(true);
+        Categoria updatedCategoriaEntity = new Categoria();
+        updatedCategoriaEntity.setId(id);
+        updatedCategoriaEntity.setNombre("SUPERHEROES");
+        updatedCategoriaEntity.setActivado(true);
 
-        Categoria categoriaMocked = new Categoria();
-        categoriaMocked.setNombre("CategoriaTestUpdate");
-
-        when(validator.isIdValid("4182d617-ec89-4fbc-be95-85e461778766")).thenReturn(true);
         when(repository.findById(id)).thenReturn(Optional.of(categoriaExistente));
-        when(mapper.toCategoria(categoriaUpdateDto)).thenReturn(categoriaMocked);
-        when(validator.isNameUnique("CategoriaTestUpdate")).thenReturn(true);
-        when(mapper.toCategoriaUpdate(categoriaUpdateDto, categoriaExistente)).thenReturn(categoriaUpdate);
-        when(repository.save(categoriaUpdate)).thenReturn(categoriaUpdate);
+        when(mapper.toCategoria(updatedCategoria, categoriaExistente)).thenReturn(updatedCategoriaEntity);
+        when(repository.save(updatedCategoriaEntity)).thenReturn(updatedCategoriaEntity);
 
-        var result = service.update(id.toString(), categoriaUpdateDto);
+        var result = service.update(id, updatedCategoria);
 
         assertAll(
                 () -> assertNotNull(result),
                 () -> assertEquals(id, result.getId()),
-                () -> assertEquals("CategoriaTestUpdate", result.getNombre()),
+                () -> assertEquals("SUPERHEROES", result.getNombre()),
                 () -> assertTrue(result.getActivado())
         );
 
-        verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778766");
         verify(repository, times(1)).findById(id);
-        verify(repository, times(1)).save(categoriaUpdate);
-        verify(mapper, times(1)).toCategoriaUpdate(categoriaUpdateDto, categoriaExistente);
-        verify(mapper, times(1)).toCategoria(categoriaUpdateDto);
-        verify(validator, times(1)).isNameUnique("CategoriaTestUpdate");
-    }
-
-    @Test
-    void updateNotValidId() {
-        CategoriaDto categoriaUpdateDto = new CategoriaDto();
-        categoriaUpdateDto.setNombre("CategoriaTestUpdate");
-        categoriaUpdateDto.setActivado(true);
-
-        when(validator.isIdValid("4182d617-ec89-4f")).thenReturn(false);
-
-        ResponseStatusException thrown = assertThrows(
-                ResponseStatusException.class, () -> service.update("4182d617-ec89-4f", categoriaUpdateDto)
-        );
-
-        assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
-        assertEquals("La id no es válida. Debe ser un UUID", thrown.getReason());
-
-        verify(validator, times(1)).isIdValid("4182d617-ec89-4f");
+        verify(repository, times(1)).save(updatedCategoriaEntity);
+        verify(mapper, times(1)).toCategoria(updatedCategoria, categoriaExistente);
     }
 
     @Test
@@ -234,106 +190,52 @@ class CategoriaServiceImplTest {
         categoriaUpdateDto.setNombre("CategoriaTestUpdate");
         categoriaUpdateDto.setActivado(true);
 
-        when(validator.isIdValid("4182d617-ec89-4fbc-be95-85e461778700")).thenReturn(true);
         when(repository.findById(id)).thenReturn(Optional.empty());
 
         ResponseStatusException thrown = assertThrows(
-                ResponseStatusException.class, () -> service.update("4182d617-ec89-4fbc-be95-85e461778700", categoriaUpdateDto)
+                ResponseStatusException.class, () -> service.update(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778700"), categoriaUpdateDto)
         );
 
         assertEquals(HttpStatus.NOT_FOUND, thrown.getStatusCode());
-        assertEquals("No existe la categoria con id 4182d617-ec89-4fbc-be95-85e461778700", thrown.getReason());
+        assertEquals("La categoria con id 4182d617-ec89-4fbc-be95-85e461778700 no se ha encontrado.", thrown.getReason());
 
-        verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778700");
         verify(repository, times(1)).findById(id);
-    }
-
-    @Test
-    void updateNotValidName() {
-        UUID id = UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766");
-        CategoriaDto categoriaUpdateDto = new CategoriaDto();
-        categoriaUpdateDto.setNombre("CategoriaTestUpdate");
-        categoriaUpdateDto.setActivado(true);
-
-        Categoria categoriaExistente = new Categoria();
-        categoriaExistente.setId(id);
-        categoriaExistente.setNombre("CategoriaTest");
-        categoriaExistente.setActivado(true);
-
-        Categoria categoriaMocked = new Categoria();
-        categoriaMocked.setNombre("CategoriaTestUpdate");
-
-        when(validator.isIdValid("4182d617-ec89-4fbc-be95-85e461778766")).thenReturn(true);
-        when(repository.findById(id)).thenReturn(Optional.of(categoriaExistente));
-        when(mapper.toCategoria(categoriaUpdateDto)).thenReturn(categoriaMocked);
-        when(validator.isNameUnique("CategoriaTestUpdate")).thenReturn(false);
-
-        ResponseStatusException thrown = assertThrows(
-                ResponseStatusException.class, () -> service.update("4182d617-ec89-4fbc-be95-85e461778766", categoriaUpdateDto)
-        );
-
-        assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
-        assertEquals("El nombre de la categoria ya existe", thrown.getReason());
-
-        verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778766");
-        verify(repository, times(1)).findById(id);
-        verify(mapper, times(1)).toCategoria(categoriaUpdateDto);
-        verify(validator, times(1)).isNameUnique("CategoriaTestUpdate");
     }
 
     @Test
     void delete() {
-        UUID id = UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766");
-        CategoriaDto categoriaBorradaDto = new CategoriaDto();
-        categoriaBorradaDto.setNombre("CategoriaTest");
-        categoriaBorradaDto.setActivado(true);
+        UUID id = UUID.fromString("79741172-6da6-47f1-9525-a6c83053f856");
+        CategoriaDto categoriaBorrada = new CategoriaDto();
+        categoriaBorrada.setId(id);
+        categoriaBorrada.setNombre("SERIE");
+        categoriaBorrada.setActivado(true);
 
         Categoria categoriaExistente = new Categoria();
         categoriaExistente.setId(id);
-        categoriaExistente.setNombre("CategoriaTest");
+        categoriaExistente.setNombre("SERIE");
         categoriaExistente.setActivado(true);
 
-        Categoria categoriaBorrada = new Categoria();
-        categoriaBorrada.setId(id);
-        categoriaBorrada.setNombre("CategoriaTest");
-        categoriaBorrada.setActivado(true);
+        Categoria updatedCategoriaEntity = new Categoria();
+        updatedCategoriaEntity.setId(id);
+        updatedCategoriaEntity.setNombre("SERIE");
+        updatedCategoriaEntity.setActivado(true);
 
-        when(validator.isIdValid("4182d617-ec89-4fbc-be95-85e461778766")).thenReturn(true);
         when(repository.findByIdAndActivadoTrue(id)).thenReturn(Optional.of(categoriaExistente));
-        when(mapper.toCategoriaUpdate(categoriaBorradaDto, categoriaExistente)).thenReturn(categoriaBorrada);
-        when(repository.save(categoriaBorrada)).thenReturn(categoriaBorrada);
+        when(mapper.toCategoria(categoriaBorrada, categoriaExistente)).thenReturn(updatedCategoriaEntity);
+        when(repository.save(updatedCategoriaEntity)).thenReturn(updatedCategoriaEntity);
 
-        var result = service.delete(id.toString(), categoriaBorradaDto);
+        var result = service.delete(id, categoriaBorrada);
 
         assertAll(
                 () -> assertNotNull(result),
                 () -> assertEquals(id, result.getId()),
-                () -> assertEquals("CategoriaTest", result.getNombre()),
+                () -> assertEquals("SERIE", result.getNombre()),
                 () -> assertTrue(result.getActivado())
         );
 
-        verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778766");
         verify(repository, times(1)).findByIdAndActivadoTrue(id);
-        verify(repository, times(1)).save(categoriaBorrada);
-        verify(mapper, times(1)).toCategoriaUpdate(categoriaBorradaDto, categoriaExistente);
-    }
-
-    @Test
-    void deleteNotValidId() {
-        CategoriaDto categoriaBorradaDto = new CategoriaDto();
-        categoriaBorradaDto.setNombre("CategoriaTest");
-        categoriaBorradaDto.setActivado(true);
-
-        when(validator.isIdValid("4182d617-ec89-4f")).thenReturn(false);
-
-        ResponseStatusException thrown = assertThrows(
-                ResponseStatusException.class, () -> service.delete("4182d617-ec89-4f", categoriaBorradaDto)
-        );
-
-        assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
-        assertEquals("La id no es válida. Debe ser un UUID", thrown.getReason());
-
-        verify(validator, times(1)).isIdValid("4182d617-ec89-4f");
+        verify(repository, times(1)).save(updatedCategoriaEntity);
+        verify(mapper, times(1)).toCategoria(categoriaBorrada, categoriaExistente);
     }
 
     @Test
@@ -353,17 +255,15 @@ class CategoriaServiceImplTest {
         categoriaBorrada.setNombre("CategoriaTest");
         categoriaBorrada.setActivado(true);
 
-        when(validator.isIdValid("4182d617-ec89-4fbc-be95-85e461778766")).thenReturn(true);
         when(repository.findByIdAndActivadoTrue(id)).thenReturn(Optional.empty());
 
         ResponseStatusException thrown = assertThrows(
-                ResponseStatusException.class, () -> service.delete("4182d617-ec89-4fbc-be95-85e461778766", categoriaBorradaDto)
+                ResponseStatusException.class, () -> service.delete(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"), categoriaBorradaDto)
         );
 
         assertEquals(HttpStatus.NOT_FOUND, thrown.getStatusCode());
-        assertEquals("No existe la categoria con id 4182d617-ec89-4fbc-be95-85e461778766", thrown.getReason());
+        assertEquals("La categoria con id 4182d617-ec89-4fbc-be95-85e461778766 no se ha encontrado.", thrown.getReason());
 
-        verify(validator, times(1)).isIdValid("4182d617-ec89-4fbc-be95-85e461778766");
         verify(repository, times(1)).findByIdAndActivadoTrue(id);
     }
 }
