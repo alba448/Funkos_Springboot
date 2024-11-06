@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
-
 @SpringBootTest
 @AutoConfigureMockMvc
 @ExtendWith(MockitoExtension.class)
@@ -55,8 +54,8 @@ class CategoriaControllerTest {
 
     @BeforeEach
     void setUp() {
-        categoriaTest.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
-        categoriaTest.setNombre("CategoriaTest");
+        categoriaTest.setId(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
+        categoriaTest.setNombre("DISNEY");
         categoriaTest.setCreatedAt(LocalDateTime.now());
         categoriaTest.setUpdatedAt(LocalDateTime.now());
         categoriaTest.setActivado(true);
@@ -76,8 +75,9 @@ class CategoriaControllerTest {
                 objectMapper.getTypeFactory().constructCollectionType(List.class, Categoria.class));
 
         assertAll(
-                () -> assertEquals(HttpStatus.OK.value(), response.getStatus()),
-                () -> assertFalse(res.isEmpty())
+                () -> assertEquals(response.getStatus(), HttpStatus.OK.value()),
+                () -> assertFalse(res.isEmpty()),
+                () -> assertTrue(res.stream().anyMatch(r -> r.getId().equals(categoriaTest.getId())))
         );
 
         verify(service, times(1)).getAll();
@@ -85,32 +85,32 @@ class CategoriaControllerTest {
 
     @Test
     void getById() throws Exception {
-        when(service.getById("4182d617-ec89-4fbc-be95-85e461778766")).thenReturn(categoriaTest);
+        when(service.getById(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"))).thenReturn(categoriaTest);
 
         MockHttpServletResponse response = mvc.perform(
-                        get(myEndpoint + "/4182d617-ec89-4fbc-be95-85e461778766")
+                        get(myEndpoint + "/12d45756-3895-49b2-90d3-c4a12d5ee081")
                                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn().getResponse();
 
         Categoria res = objectMapper.readValue(response.getContentAsString(), Categoria.class);
 
         assertAll(
-                () -> assertEquals(HttpStatus.OK.value(), response.getStatus()),
-                () -> assertEquals(categoriaTest.getId(), res.getId()),
-                () -> assertEquals(categoriaTest.getNombre(), res.getNombre()),
-                () -> assertEquals(categoriaTest.getActivado(), res.getActivado())
+                () -> assertEquals(response.getStatus(), HttpStatus.OK.value()),
+                () -> assertEquals(res.getId(), categoriaTest.getId()),
+                () -> assertEquals(res.getNombre(), categoriaTest.getNombre()),
+                () -> assertEquals(res.getActivado(), categoriaTest.getActivado())
         );
 
-        verify(service, times(1)).getById("4182d617-ec89-4fbc-be95-85e461778766");
+        verify(service, times(1)).getById(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
     }
 
     @Test
     void save() throws Exception {
         CategoriaDto nuevoCategoria = new CategoriaDto();
-        nuevoCategoria.setNombre("CategoriaTest");
+        nuevoCategoria.setNombre("DISNEY");
         nuevoCategoria.setActivado(true);
 
-        when(service.save(nuevoCategoria)).thenReturn(mapper.toCategoria(nuevoCategoria));
+        when(service.save(nuevoCategoria)).thenReturn(mapper.fromDto(nuevoCategoria));
 
         MockHttpServletResponse response = mvc.perform(
                         post(myEndpoint)
@@ -121,10 +121,10 @@ class CategoriaControllerTest {
         Categoria res = objectMapper.readValue(response.getContentAsString(), Categoria.class);
 
         assertAll(
-                () -> assertEquals(HttpStatus.CREATED.value(), response.getStatus()),
-                () -> assertEquals(mapper.toCategoria(nuevoCategoria).getId(), res.getId()),
-                () -> assertEquals(mapper.toCategoria(nuevoCategoria).getNombre(), res.getNombre()),
-                () -> assertEquals(nuevoCategoria.getActivado(), res.getActivado())
+                () -> assertEquals(response.getStatus(), HttpStatus.CREATED.value()),
+                () -> assertEquals(res.getId(), mapper.fromDto(nuevoCategoria).getId()),
+                () -> assertEquals(res.getNombre(), mapper.fromDto(nuevoCategoria).getNombre()),
+                () -> assertEquals(res.getActivado(), nuevoCategoria.getActivado())
         );
 
         verify(service, times(1)).save(nuevoCategoria);
@@ -133,18 +133,18 @@ class CategoriaControllerTest {
     @Test
     void update() throws Exception {
         CategoriaDto updatedCategoria = new CategoriaDto();
-        updatedCategoria.setNombre("CategoriaUpdateTest");
+        updatedCategoria.setNombre("SUPERHEROES");
         updatedCategoria.setActivado(true);
 
         Categoria expectedCategoria = new Categoria();
-        expectedCategoria.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
-        expectedCategoria.setNombre("CategoriaUpdateTest");
+        expectedCategoria.setId(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
+        expectedCategoria.setNombre("SUPERHEROES");
         expectedCategoria.setActivado(true);
 
-        when(service.update("4182d617-ec89-4fbc-be95-85e461778766", updatedCategoria)).thenReturn(expectedCategoria);
+        when(service.update(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"), updatedCategoria)).thenReturn(expectedCategoria);
 
         MockHttpServletResponse response = mvc.perform(
-                        put(myEndpoint + "/4182d617-ec89-4fbc-be95-85e461778766")
+                        patch(myEndpoint + "/12d45756-3895-49b2-90d3-c4a12d5ee081")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(updatedCategoria)))
                 .andReturn().getResponse();
@@ -153,25 +153,25 @@ class CategoriaControllerTest {
 
         Categoria res = objectMapper.readValue(response.getContentAsString(), Categoria.class);
         assertAll(
-                () -> assertEquals(expectedCategoria.getId(), res.getId()),
-                () -> assertEquals(expectedCategoria.getNombre(), res.getNombre()),
-                () -> assertEquals(expectedCategoria.getActivado(), res.getActivado())
+                () -> assertEquals(res.getId(), expectedCategoria.getId()),
+                () -> assertEquals(res.getNombre(), expectedCategoria.getNombre()),
+                () -> assertEquals(res.getActivado(), expectedCategoria.getActivado())
         );
 
-        verify(service, times(1)).update("4182d617-ec89-4fbc-be95-85e461778766", updatedCategoria);
+        verify(service, times(1)).update(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"), updatedCategoria);
     }
 
 
     @Test
     void delete() throws Exception {
         CategoriaDto deletedCategoria = new CategoriaDto();
-        deletedCategoria.setNombre("CategoriaDeleteTest");
+        deletedCategoria.setNombre("SUPERHEROES");
         deletedCategoria.setActivado(true);
 
-        when(service.delete("4182d617-ec89-4fbc-be95-85e461778766", deletedCategoria)).thenReturn(mapper.toCategoria(deletedCategoria));
+        when(service.update(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"), deletedCategoria)).thenReturn(mapper.fromDto(deletedCategoria));
 
         MockHttpServletResponse response = mvc.perform(
-                        patch(myEndpoint + "/4182d617-ec89-4fbc-be95-85e461778766")
+                        patch(myEndpoint + "/12d45756-3895-49b2-90d3-c4a12d5ee081")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(deletedCategoria)))
                 .andReturn().getResponse();
@@ -181,12 +181,12 @@ class CategoriaControllerTest {
         Categoria res = objectMapper.readValue(response.getContentAsString(), Categoria.class);
 
         assertAll(
-                () -> assertEquals(HttpStatus.OK.value(), response.getStatus()),
-                () -> assertEquals(mapper.toCategoria(deletedCategoria).getId(), res.getId()),
-                () -> assertEquals(mapper.toCategoria(deletedCategoria).getNombre(), res.getNombre()),
-                () -> assertEquals(deletedCategoria.getActivado(), res.getActivado())
+                () -> assertEquals(response.getStatus(), HttpStatus.OK.value()),
+                () -> assertEquals(res.getId(), mapper.fromDto(deletedCategoria).getId()),
+                () -> assertEquals(res.getNombre(), mapper.fromDto(deletedCategoria).getNombre()),
+                () -> assertEquals(res.getActivado(), deletedCategoria.getActivado())
         );
 
-        verify(service, times(1)).delete("4182d617-ec89-4fbc-be95-85e461778766", deletedCategoria);
+        verify(service, times(1)).update(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"), deletedCategoria);
     }
 }

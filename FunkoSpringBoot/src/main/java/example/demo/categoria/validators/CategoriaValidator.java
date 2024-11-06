@@ -8,7 +8,6 @@ import java.util.UUID;
 
 @Component
 public class CategoriaValidator {
-
     private final CategoriaRepository categoriaRepository;
 
     public CategoriaValidator(CategoriaRepository categoriaRepository) {
@@ -17,14 +16,5 @@ public class CategoriaValidator {
 
     public boolean isNameUnique(String nombre) {
         return categoriaRepository.findByNombre(nombre).isEmpty();
-    }
-
-    public boolean isIdValid(String value) {
-        try {
-            UUID.fromString(value);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
     }
 }

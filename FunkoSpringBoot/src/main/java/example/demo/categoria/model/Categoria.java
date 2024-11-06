@@ -20,7 +20,6 @@ public class Categoria {
     @GeneratedValue
     private UUID id;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "nombre", nullable = false, unique = true)
     private String nombre;
 
