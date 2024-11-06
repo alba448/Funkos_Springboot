@@ -1,68 +1,110 @@
 package example.demo.storage.controllers;
 
 
-
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import example.demo.storage.services.StorageService;
-import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.web.servlet.MockMvc;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
-@WebMvcTest(StorageController.class)
-@Import(StorageControllerTest.TestConfig.class)
-public class StorageControllerTest {
+@SpringBootTest
+@AutoConfigureMockMvc
+@ExtendWith(MockitoExtension.class)
+class StorageControllerTest {
 
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public StorageService storageService() {
-            return mock(StorageService.class);
-        }
-
-        @Bean
-        public ServletContext servletContext() {
-            return mock(ServletContext.class);
-        }
-    }
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
+    @MockBean
     private StorageService storageService;
 
     @Autowired
-    private ServletContext servletContext;
+    private MockMvc mvc;
+
+    private final String endpoint = "/funkos/files";
+
+    @MockBean
+    private HttpServletRequest request;
+
+    @MockBean
+    private Resource resource;
 
     @BeforeEach
-    public void setup() {
-        Resource mockResource = new ByteArrayResource("caca".getBytes());
-        when(storageService.loadAsResource(anyString())).thenReturn(mockResource);
-        when(servletContext.getMimeType(anyString())).thenReturn("text/plain");
+    void setUp() throws IOException {
+        MockitoAnnotations.openMocks(this);
+
+        Path sourcePath = Paths.get("test_imgs", "test-image20.png");
+        if (Files.notExists(sourcePath)) {
+            Files.createDirectories(sourcePath.getParent());
+            Files.createFile(sourcePath);
+        }
+
+        Path destination = Paths.get("imgs/test-image20.png");
+        Files.createDirectories(destination.getParent());
+
+        Files.copy(sourcePath, destination, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+
+    @Test
+    void serveFile() throws Exception {
+        String filename = "test-image20.png";
+
+        Resource resource = mock(Resource.class);
+        File testFile = Files.createFile(Path.of("test_imgs/test-image20.png")).toFile();
+        when(storageService.loadAsResource(filename)).thenReturn(resource);
+        when(resource.getInputStream()).thenReturn(new FileInputStream(testFile));
+
+        MockHttpServletResponse response = mvc.perform(
+                        get(endpoint + "/" + filename)
+                                .accept(MediaType.APPLICATION_JSON))
+                .andReturn().getResponse();
+
+        assertAll(
+                () -> assertEquals(HttpStatus.OK.value(), response.getStatus()),
+                () -> assertTrue(response.getContentLength() > 0)
+        );
+
+        verify(storageService, times(1)).loadAsResource(filename);
     }
 
     @Test
-    public void testServeFile() throws Exception {
-        mockMvc.perform(get("/v1/storage/testfile.txt"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.TEXT_PLAIN))
-                .andExpect(content().string("caca"));
+    void serveFileThrowsException() throws Exception {
+        String filename = "test-image20.kei";
+
+        when(storageService.loadAsResource(filename)).thenReturn(resource);
+        when(resource.getFile()).thenThrow(new IOException());
+
+        MockHttpServletResponse response = mvc.perform(
+                        get(endpoint + "/" + filename)
+                                .accept(MediaType.APPLICATION_JSON))
+                .andReturn().getResponse();
+
+        assertAll(
+                () -> assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatus()),
+                () -> assertTrue(response.getContentAsString().contains("No se puede determinar el tipo de fichero"))
+        );
+
+        verify(storageService, times(1)).loadAsResource(filename);
     }
 }
