@@ -54,7 +54,7 @@ class FunkoControllerTest {
 
     @BeforeEach
     void setUp() {
-        categoriaTest.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
+        categoriaTest.setId(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
         categoriaTest.setNombre("PELICULA");
         categoriaTest.setActivado(true);
         objectMapper.registerModule(new JavaTimeModule());
@@ -112,7 +112,7 @@ class FunkoControllerTest {
     @Test
     void save() throws Exception {
         Categoria nuevaCategoria = new Categoria();
-        nuevaCategoria.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778777"));
+        nuevaCategoria.setId(UUID.fromString("5790bdd4-8898-4c61-b547-bc26952dc2a3"));
         nuevaCategoria.setNombre("DISNEY");
         nuevaCategoria.setActivado(true);
 
@@ -144,17 +144,22 @@ class FunkoControllerTest {
 
     @Test
     void update() throws Exception {
-        Categoria updateCategoria = new Categoria();
-        updateCategoria.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778788"));
-        updateCategoria.setNombre("SUPERHEROES");
-        updateCategoria.setActivado(true);
+        Categoria updatedCategoria = new Categoria();
+        updatedCategoria.setId(UUID.fromString("5790bdd4-8898-4c61-b547-bc26952dc2a3"));
+        updatedCategoria.setNombre("SUPERHEROE");
+        updatedCategoria.setActivado(true);
 
         FunkoDto updateFunko = new FunkoDto();
         updateFunko.setNombre("Goku");
         updateFunko.setPrecio(15.99);
-        updateFunko.setCategoria("DISNEY");
+        updateFunko.setCategoria(updatedCategoria.getNombre());
 
-        when(service.update(2L, updateFunko)).thenReturn(mapper.toFunko(updateFunko, updateCategoria));
+        Funko funko = new Funko();
+        funko.setNombre(updateFunko.getNombre());
+        funko.setPrecio(updateFunko.getPrecio());
+        funko.setCategoria(updatedCategoria);
+
+        when(service.update(2L, updateFunko)).thenReturn(mapper.toFunkoUpdate(updateFunko, funko, updatedCategoria));
 
         MockHttpServletResponse response = mvc.perform(
                         put(myEndpoint + "/2")
@@ -168,7 +173,7 @@ class FunkoControllerTest {
                 () -> assertEquals(response.getStatus(), HttpStatus.OK.value()),
                 () -> assertEquals(res.getNombre(), updateFunko.getNombre()),
                 () -> assertEquals(res.getPrecio(), updateFunko.getPrecio()),
-                () -> assertEquals(res.getCategoria(), updateCategoria)
+                () -> assertEquals(res.getCategoria().getNombre(), updateFunko.getCategoria())
         );
 
         verify(service, times(1)).update(2L, updateFunko);
@@ -183,7 +188,7 @@ class FunkoControllerTest {
                                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn().getResponse();
 
-        assertEquals(response.getStatus(), HttpStatus.NO_CONTENT.value());
+        assertEquals(response.getStatus(), HttpStatus.OK.value());
 
         verify(service, times(1)).delete(1L);
     }

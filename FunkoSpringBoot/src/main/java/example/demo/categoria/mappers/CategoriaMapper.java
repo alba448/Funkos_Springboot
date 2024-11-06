@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 public class CategoriaMapper {
     public Categoria toCategoria(CategoriaDto categoriaDto) {
         var categoria = new Categoria();
-        categoria.setNombre(categoriaDto.getNombre());
+        categoria.setNombre(categoriaDto.getNombre().toUpperCase());
         return categoria;
     }
 

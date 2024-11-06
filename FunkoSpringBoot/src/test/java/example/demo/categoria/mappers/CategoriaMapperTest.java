@@ -16,7 +16,7 @@ class CategoriaMapperTest {
     @Test
     void toCategoria() {
         CategoriaDto categoriaDto = new CategoriaDto();
-        categoriaDto.setNombre("DISNEY");
+        categoriaDto.setNombre("CATEGORIATEST");
         categoriaDto.setActivado(true);
 
         var res = mapper.toCategoria(categoriaDto);
@@ -30,12 +30,12 @@ class CategoriaMapperTest {
     @Test
     void toCategoriaUpdate() {
         CategoriaDto categoriaDto = new CategoriaDto();
-        categoriaDto.setNombre("DISNEY");
+        categoriaDto.setNombre("CATEGORIATEST");
         categoriaDto.setActivado(true);
 
         Categoria categoria = new Categoria(
                 null,
-                "DISNEY",
+                "CATEGORIATEST",
                 LocalDateTime.now(),
                 LocalDateTime.now(),
                 categoriaDto.getActivado()

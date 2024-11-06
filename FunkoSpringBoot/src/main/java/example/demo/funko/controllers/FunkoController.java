@@ -22,7 +22,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/funkos")
-@Validated
 public class FunkoController {
     private FunkoService service;
 
@@ -36,26 +35,39 @@ public class FunkoController {
         return ResponseEntity.ok(service.getAll());
     }
 
-    @GetMapping("{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<Funko> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
     @PostMapping
     public ResponseEntity<Funko> save(@Valid @RequestBody FunkoDto funkoDto) {
-        var result = service.save(funkoDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(result);
+        var res = service.save(funkoDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(res);
     }
 
-    @PutMapping("{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<Funko> update(@PathVariable Long id, @Valid @RequestBody FunkoDto funkoDto) {
-        var result = service.update(id, funkoDto);
-        return ResponseEntity.ok(result);
+        var res = service.update(id, funkoDto);
+        return ResponseEntity.ok(res);
     }
 
-    @DeleteMapping("{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Funko> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+        var res = service.delete(id);
+        return ResponseEntity.ok(res);
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Map<String, String> handleValidationExceptions(
+            MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        return errors;
     }
 }

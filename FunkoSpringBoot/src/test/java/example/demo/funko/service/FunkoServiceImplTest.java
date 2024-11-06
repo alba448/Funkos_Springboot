@@ -41,13 +41,13 @@ class FunkoServiceImplTest {
     @BeforeEach
     void setUp() {
         categoriaTest = new Categoria();
-        categoriaTest.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
-        categoriaTest.setNombre("DISNEY");
+        categoriaTest.setId(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
+        categoriaTest.setNombre("PELICULA");
         categoriaTest.setActivado(true);
 
         funkoTest = new Funko();
-        funkoTest.setNombre("Mickey Mouse");
-        funkoTest.setPrecio(18.99);
+        funkoTest.setNombre("Darth Vader");
+        funkoTest.setPrecio(10.99);
         funkoTest.setCategoria(categoriaTest);
     }
 
@@ -60,9 +60,9 @@ class FunkoServiceImplTest {
         assertAll(
                 () -> assertEquals(1, result.size()),
                 () -> assertTrue(result.contains(funkoTest)),
-                () -> assertEquals("Mickey Mouse", result.getFirst().getNombre()),
-                () -> assertEquals(18.99, result.getFirst().getPrecio()),
-                () -> assertEquals(categoriaTest, result.getFirst().getCategoria())
+                () -> assertEquals("Darth Vader", result.get(0).getNombre()),
+                () -> assertEquals(10.99, result.get(0).getPrecio()),
+                () -> assertEquals(categoriaTest, result.get(0).getCategoria())
         );
 
         verify(repository, times(1)).findAll();
@@ -76,8 +76,8 @@ class FunkoServiceImplTest {
 
         assertAll(
                 () -> assertNotNull(result),
-                () -> assertEquals("Mickey Mouse", result.getNombre()),
-                () -> assertEquals(18.99, result.getPrecio()),
+                () -> assertEquals("Darth Vader", result.getNombre()),
+                () -> assertEquals(10.99, result.getPrecio()),
                 () -> assertEquals(categoriaTest, result.getCategoria())
         );
 
@@ -87,13 +87,13 @@ class FunkoServiceImplTest {
     @Test
     void save() {
         Categoria nuevaCategoria = new Categoria();
-        nuevaCategoria.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778777"));
-        nuevaCategoria.setNombre("PELICULA");
+        nuevaCategoria.setId(UUID.fromString("5790bdd4-8898-4c61-b547-bc26952dc2a3"));
+        nuevaCategoria.setNombre("DISNEY");
         nuevaCategoria.setActivado(true);
 
         FunkoDto nuevoFunko = new FunkoDto();
-        nuevoFunko.setNombre("Pluto");
-        nuevoFunko.setPrecio(15.99);
+        nuevoFunko.setNombre("Mickey Mouse");
+        nuevoFunko.setPrecio(7.95);
         nuevoFunko.setCategoria(nuevaCategoria.getNombre());
 
         Funko funkoMapped = new Funko();
@@ -103,14 +103,14 @@ class FunkoServiceImplTest {
 
         when(mapper.toFunko(nuevoFunko, nuevaCategoria)).thenReturn(funkoMapped);
         when(repository.save(funkoMapped)).thenReturn(funkoMapped);
-        when(categoriaService.getByNombre("PELICULA")).thenReturn(nuevaCategoria);
+        when(categoriaService.getByNombre("DISNEY")).thenReturn(nuevaCategoria);
 
         var result = service.save(nuevoFunko);
 
         assertAll(
                 () -> assertNotNull(result, "Result should not be null"),
-                () -> assertEquals("Pluto", result.getNombre()),
-                () -> assertEquals(15.99, result.getPrecio()),
+                () -> assertEquals("Mickey Mouse", result.getNombre()),
+                () -> assertEquals(7.95, result.getPrecio()),
                 () -> assertEquals(nuevaCategoria, result.getCategoria())
         );
 
@@ -121,31 +121,39 @@ class FunkoServiceImplTest {
 
     @Test
     void update() {
-        /*Categoria updateCategoria = new Categoria();
-        updateCategoria.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778788"));
-        updateCategoria.setNombre("SUPERHEROES");
-        updateCategoria.setActivado(true);
+        Categoria updatedCategoria = new Categoria();
+        updatedCategoria.setId(UUID.fromString("5790bdd4-8898-4c61-b547-bc26952dc2a3"));
+        updatedCategoria.setNombre("SUPERHEROES");
+        updatedCategoria.setActivado(true);
 
-        FunkoDto updatedFunko = new FunkoDto();
-        updatedFunko.setNombre("SpiderMan");
-        updatedFunko.setPrecio(12.99);
-        updatedFunko.setCategoria("SUPERHEROES");
+        FunkoDto updatedFunkoDto = new FunkoDto();
+        updatedFunkoDto.setNombre("Superman");
+        updatedFunkoDto.setPrecio(15.99);
+        updatedFunkoDto.setCategoria(updatedCategoria.getNombre());
 
-        when(repository.findById(1L)).thenReturn(mapper.toFunko(updatedFunko, updateCategoria));
+        Funko updatedFunko = new Funko();
+        updatedFunko.setId(2L);
+        updatedFunko.setNombre("Superman");
+        updatedFunko.setPrecio(15.99);
+        updatedFunko.setCategoria(updatedCategoria);
+
+        when(repository.findById(2L)).thenReturn(Optional.of(updatedFunko));
         when(repository.save(updatedFunko)).thenReturn(updatedFunko);
+        when(categoriaService.getByNombre("SUPERHEROES")).thenReturn(updatedCategoria);
 
-        var result = service.update(2L, updatedFunko);
+        var result = service.update(2L, updatedFunkoDto);
 
         assertAll(
-            () -> assertNotNull(result),
-            () -> assertEquals(2L, result.getId()),
-            () -> assertEquals("SpiderMan", result.getNombre()),
-            () -> assertEquals(12.99, result.getPrecio()),
-            () -> assertEquals(updatedCategoria, result.getCategoria())
+                () -> assertNotNull(result),
+                () -> assertEquals(2L, result.getId()),
+                () -> assertEquals("Superman", result.getNombre()),
+                () -> assertEquals(15.99, result.getPrecio()),
+                () -> assertEquals(updatedCategoria, result.getCategoria())
         );
 
         verify(repository, times(1)).findById(2L);
-        verify(repository, times(1)).save(updatedFunko);*/
+        verify(repository, times(1)).save(updatedFunko);
+        verify(categoriaService, times(1)).getByNombre(updatedCategoria.getNombre());
     }
 
     @Test
@@ -155,8 +163,8 @@ class FunkoServiceImplTest {
         var result = service.delete(1L);
 
         assertAll(
-                () -> assertEquals("Mickey Mouse", result.getNombre()),
-                () -> assertEquals(18.99, result.getPrecio()),
+                () -> assertEquals("Darth Vader", result.getNombre()),
+                () -> assertEquals(10.99, result.getPrecio()),
                 () -> assertEquals(categoriaTest, result.getCategoria())
         );
 

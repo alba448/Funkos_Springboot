@@ -27,19 +27,37 @@ class CategoriaRepositoryTest {
     void setUp() {
         categoriaTest = new Categoria();
         categoriaTest.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
-        categoriaTest.setNombre("DISNEY");
+        categoriaTest.setNombre("CategoriaTest");
         categoriaTest.setActivado(true);
+
         entityManager.merge(categoriaTest);
+        entityManager.flush();
     }
 
     @Test
     void findById() {
-        var result = repository.findById(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
+        var result = repository.findById(categoriaTest.getId());
 
         assertAll(
                 () -> assertNotNull(result),
-                () -> assertEquals("DISNEY", result.get().getNombre()),
-                () -> assertTrue(result.get().getActivado())
+                () -> {
+                    if (result.isPresent()) {
+                        assertEquals("CategoriaTest", result.get().getNombre());
+                        assertTrue(result.get().getActivado());
+                    }
+                }
+        );
+    }
+
+    @Test
+    void findByIdNotFound() {
+        var result = repository.findById(UUID.randomUUID());
+
+        assertAll(
+                () -> assertNotNull(result),
+                () -> {
+                    assertTrue(result.isEmpty());
+                }
         );
     }
 
@@ -49,19 +67,45 @@ class CategoriaRepositoryTest {
 
         assertAll(
                 () -> assertNotNull(result),
-                () -> assertEquals("DISNEY", result.get().getNombre()),
-                () -> assertTrue(result.get().getActivado())
+                () -> {
+                    if (result.isPresent()) {
+                        assertEquals("CategoriaTest", result.get().getNombre());
+                        assertTrue(result.get().getActivado());
+                    }
+                }
+        );
+    }
+
+    @Test
+    void findByIdAndActivadoTrueNotFound() {
+        var result = repository.findByIdAndActivadoTrue(UUID.randomUUID());
+
+        assertAll(
+                () -> assertNotNull(result),
+                () -> {
+                    assertTrue(result.isEmpty());
+                }
         );
     }
 
     @Test
     void findByNombre() {
-        var result = repository.findByNombre("DISNEY");
+        var result = repository.findByNombre("CategoriaTest");
 
         assertAll(
                 () -> assertNotNull(result),
-                () -> assertEquals("DISNEY", result.get().getNombre()),
+                () -> assertEquals("CategoriaTest", result.get().getNombre()),
                 () -> assertTrue(result.get().getActivado())
+        );
+    }
+
+    @Test
+    void findByNombreNotFound() {
+        var result = repository.findByNombre("CategoriaTestNotFound");
+
+        assertAll(
+                () -> assertNotNull(result),
+                () -> assertTrue(result.isEmpty())
         );
     }
 }

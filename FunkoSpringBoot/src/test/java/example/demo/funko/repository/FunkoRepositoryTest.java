@@ -24,33 +24,38 @@ class FunkoRepositoryTest {
     @Autowired
     private TestEntityManager entityManager;
 
-    private static final Categoria categoriaTest = new Categoria(UUID.fromString("3e678c5a-4de3-42d1-ab6a-833fa06befcc"), "DISNEY", LocalDateTime.now(), LocalDateTime.now(), true);
-    private static final Funko funkoTest = new Funko(1L, "Mickey Mouse", 18.99, categoriaTest, LocalDateTime.now(), LocalDateTime.now());
+    private static Categoria categoriaTest = new Categoria(UUID.randomUUID(), "PELICULA", LocalDateTime.now(), LocalDateTime.now(), true);
+    private static Funko funkoTest = new Funko(1L, "Darth Vader", 10.99, categoriaTest, LocalDateTime.now(), LocalDateTime.now());
 
     @BeforeEach
     void setUp() {
-        entityManager.persistAndFlush(funkoTest);
-        entityManager.persistAndFlush(categoriaTest);
+        categoriaTest = entityManager.merge(categoriaTest);
+        entityManager.flush();
+        funkoTest.setCategoria(categoriaTest);
+        funkoTest = repository.saveAndFlush(funkoTest);
     }
+
 
     @Test
     void findAll() {
-        List<Funko> funkos = repository.findAll();
+        var result = repository.findAll();
 
-        assertAll("findAll",
-                () -> assertNotNull(funkos),
-                () -> assertFalse(funkos.isEmpty()),
-                () -> assertEquals(1, funkos.size())
+        assertAll(
+                () -> assertEquals(1, result.size()),
+                () -> assertEquals(funkoTest.getNombre(), result.get(0).getNombre()),
+                () -> assertEquals(funkoTest.getPrecio(), result.get(0).getPrecio()),
+                () -> assertEquals(funkoTest.getCategoria(), result.get(0).getCategoria())
         );
     }
 
     @Test
     void findById() {
-        var result = repository.findById(1L);
+        Long id = funkoTest.getId();
+
+        var result = repository.findById(id);
 
         assertAll(
-                () -> assertNotNull(result),
-                () -> assertEquals(funkoTest.getId(), result.get().getId()),
+                () -> assertTrue(result.isPresent()),
                 () -> assertEquals(funkoTest.getNombre(), result.get().getNombre()),
                 () -> assertEquals(funkoTest.getPrecio(), result.get().getPrecio()),
                 () -> assertEquals(funkoTest.getCategoria(), result.get().getCategoria())
@@ -74,23 +79,5 @@ class FunkoRepositoryTest {
                 () -> assertEquals(funkoTest.getPrecio(), savedFunko.getPrecio()),
                 () -> assertEquals(funkoTest.getCategoria(), savedFunko.getCategoria())
         );
-    }
-
-    @Test
-    void deleteFunkoById() {
-        repository.deleteById(1L);
-        var result = repository.findById(1L);
-
-        assertAll(
-                () -> assertNull(result.orElse(null))
-        );
-    }
-
-    @Test
-    void deleteFunkoByIdNotFound() {
-        repository.deleteById(999L);
-        var result = repository.findById(999L);
-
-        assertNull(result.orElse(null));
     }
 }

@@ -3,12 +3,14 @@ package example.demo.funko.mappers;
 
 import example.demo.categoria.model.Categoria;
 import example.demo.funko.dto.FunkoDto;
+import example.demo.funko.model.Funko;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+
 
 class FunkoMapperTest {
 
@@ -25,6 +27,32 @@ class FunkoMapperTest {
         var res = mapper.toFunko(funkoDto, categoria);
 
         assertAll(
+                () -> assertEquals(funkoDto.getNombre(), res.getNombre()),
+                () -> assertEquals(funkoDto.getPrecio(), res.getPrecio()),
+                () -> assertEquals(funkoDto.getCategoria(), res.getCategoria().getNombre())
+        );
+    }
+
+    @Test
+    void toFunkoUpdate() {
+        FunkoDto funkoDto = new FunkoDto();
+        funkoDto.setNombre("Darth Vader");
+        funkoDto.setPrecio(10.99);
+        funkoDto.setCategoria(categoria.getNombre());
+
+        Funko funko = new Funko(
+                null,
+                funkoDto.getNombre(),
+                funkoDto.getPrecio(),
+                categoria,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+
+        var res = mapper.toFunko(funkoDto, categoria);
+
+        assertAll(
+                () -> assertNull(res.getId()),
                 () -> assertEquals(funkoDto.getNombre(), res.getNombre()),
                 () -> assertEquals(funkoDto.getPrecio(), res.getPrecio()),
                 () -> assertEquals(funkoDto.getCategoria(), res.getCategoria().getNombre())

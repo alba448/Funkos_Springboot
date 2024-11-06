@@ -1,5 +1,8 @@
 package example.demo.storage.services;
 
+import example.demo.storage.exceptions.StorageBadRequest;
+import example.demo.storage.exceptions.StorageInternal;
+import example.demo.storage.exceptions.StorageNotFound;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,28 +38,46 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.TestPropertySource;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@ExtendWith({MockitoExtension.class, SpringExtension.class})
-@TestPropertySource(properties = "upload.root-location=upload-dir")
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.mock.web.MockMultipartFile;
+
+@ExtendWith(MockitoExtension.class)
 public class StorageServiceImplTest {
 
-    @Value("${upload.root-location}")
-    private String rootLocationPath;
+    private final String rootLocationPath = "upload-dir";
+    private Path rootLocation;
 
     @Mock
-    private Path rootLocation;
+    private Path mockPath;
 
     @InjectMocks
     private StorageServiceImpl storageService;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         rootLocation = Paths.get(rootLocationPath);
         storageService = new StorageServiceImpl(rootLocationPath);
     }
 
+    // Casos correctos
     @Test
-    public void testStore() throws IOException {
+    void testStore() throws IOException {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "Test content".getBytes());
 
         String storedFilename = storageService.store(file);
@@ -66,76 +87,104 @@ public class StorageServiceImplTest {
     }
 
     @Test
-    public void testLoadAll() throws IOException {
-        Path testPath = rootLocation.resolve("test.txt");
+    void testLoadAll() throws IOException {
         Files.createDirectories(rootLocation);
-        Files.createFile(testPath);
+        Files.createFile(rootLocation.resolve("test.txt"));
 
         Stream<Path> files = storageService.loadAll();
 
         assertNotNull(files);
-        assertTrue(files.anyMatch(path -> path.equals(testPath.getFileName())));
-
-        Files.deleteIfExists(testPath);
+        assertTrue(files.anyMatch(path -> path.equals(Paths.get("test.txt"))));
     }
 
     @Test
-    public void testLoad() {
+    void testLoad() {
         String filename = "test.txt";
         Path path = storageService.load(filename);
         assertEquals(rootLocation.resolve(filename), path);
     }
 
     @Test
-    public void testLoadAsResource() throws MalformedURLException {
+    void testLoadAsResource() throws IOException {
         String filename = "test.txt";
-        Path testPath = rootLocation.resolve(filename);
-        Resource resource = new ByteArrayResource("Test content".getBytes());
+        Files.createFile(rootLocation.resolve(filename));
 
-        when(rootLocation.resolve(filename)).thenReturn(testPath);
+        Resource resource = storageService.loadAsResource(filename);
 
-        Resource loadedResource = storageService.loadAsResource(filename);
-
-        assertNotNull(loadedResource);
-        assertEquals(resource.getFilename(), loadedResource.getFilename());
+        assertNotNull(resource);
+        assertEquals(filename, resource.getFilename());
     }
 
     @Test
-    public void testDeleteAll() throws IOException {
-        File rootFile = mock(File.class);
-        when(rootLocation.toFile()).thenReturn(rootFile);
-
-        doNothing().when(rootFile).delete();
-        storageService.deleteAll();
-
-        verify(rootFile, times(1)).delete();
-    }
-
-    @Test
-    public void testInit() throws IOException {
-        doNothing().when(Files.class);
-        storageService.init();
-
-        verify(Files.class);
-    }
-
-    @Test
-    public void testDelete() throws IOException {
+    void testDelete() throws IOException {
         String filename = "test.txt";
-        Path path = storageService.load(filename);
-        Files.createFile(path);
+        Files.createFile(rootLocation.resolve(filename));
 
         storageService.delete(filename);
 
-        assertFalse(Files.exists(path));
+        assertFalse(Files.exists(rootLocation.resolve(filename)));
     }
 
     @Test
-    public void testGetUrl() {
+    void testInit() throws IOException {
+        storageService.init();
+
+        assertTrue(Files.exists(rootLocation));
+    }
+
+    @Test
+    void testDeleteAll() throws IOException {
+        Files.createDirectories(rootLocation);
+        Files.createFile(rootLocation.resolve("test.txt"));
+
+        storageService.deleteAll();
+
+        assertFalse(Files.exists(rootLocation.resolve("test.txt")));
+    }
+
+    @Test
+    void testGetUrl() {
         String filename = "test.txt";
         String url = storageService.getUrl(filename);
 
         assertNotNull(url);
         assertTrue(url.contains("/v1/storage/test.txt"));
+    }
+
+    // Casos incorrectos
+    @Test
+    void testStore_EmptyFile() {
+        MockMultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", new byte[0]);
+
+        Exception exception = assertThrows(StorageBadRequest.class, () -> storageService.store(file));
+
+        assertTrue(exception.getMessage().contains("Fichero vacío"));
+    }
+
+    @Test
+    void testStore_FilenameWithRelativePath() {
+        MockMultipartFile file = new MockMultipartFile("file", "../test.txt", "text/plain", "Test content".getBytes());
+
+        Exception exception = assertThrows(StorageBadRequest.class, () -> storageService.store(file));
+
+        assertTrue(exception.getMessage().contains("No se puede almacenar un fichero con una ruta relativa fuera del directorio actual"));
+    }
+
+    @Test
+    void testLoadAsResource_FileNotFound() {
+        String filename = "non_existent.txt";
+
+        Exception exception = assertThrows(StorageNotFound.class, () -> storageService.loadAsResource(filename));
+
+        assertTrue(exception.getMessage().contains("No se puede leer fichero"));
+    }
+
+    @Test
+    void testDelete_FileNotFound() {
+        String filename = "non_existent.txt";
+
+        Exception exception = assertThrows(StorageInternal.class, () -> storageService.delete(filename));
+
+        assertTrue(exception.getMessage().contains("No se puede eliminar el fichero"));
     }
 }
