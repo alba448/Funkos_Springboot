@@ -1,54 +1,67 @@
-package com.example.demo.categoria.repository;
+package example.demo.categoria.repository;
+
+
+import example.demo.categoria.model.Categoria;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
-
-import com.example.demo.categoria.model.Categoria;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-@ExtendWith(SpringExtension.class)
 @DataJpaTest
-public class CategoriaRepositoryTest {
+class CategoriaRepositoryTest {
 
     @Autowired
-    private CategoriaRepository categoriaRepository;
+    private CategoriaRepository repository;
 
-    @Test
-    void testFindByTipo() {
-        Categoria categoria = new Categoria();
-        categoria.setId(UUID.randomUUID());
+    @Autowired
+    private TestEntityManager entityManager;
 
-        categoria.setTipo("Tipo Test");
-        categoria.setActiva(true);
-        categoriaRepository.save(categoria);
+    private Categoria categoriaTest;
 
-        List<Categoria> found = categoriaRepository.findByTipo("Tipo Test");
-        assertFalse(found.isEmpty());
-        assertEquals(1, found.size());
-
+    @BeforeEach
+    void setUp() {
+        categoriaTest = new Categoria();
+        categoriaTest.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
+        categoriaTest.setNombre("DISNEY");
+        categoriaTest.setActivado(true);
+        entityManager.merge(categoriaTest);
     }
 
     @Test
-    void testFindByIdAndActivaTrue() {
-        UUID id = UUID.randomUUID();
-        Categoria categoria = new Categoria();
-        categoria.setId(id);
+    void findById() {
+        var result = repository.findById(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
 
-        categoria.setTipo("Tipo Test");
-        categoria.setActiva(true);
-        categoriaRepository.save(categoria);
+        assertAll(
+                () -> assertNotNull(result),
+                () -> assertEquals("DISNEY", result.get().getNombre()),
+                () -> assertTrue(result.get().getActivado())
+        );
+    }
 
-        Optional<Categoria> found = categoriaRepository.findByIdAndActivaTrue(id);
-        assertTrue(found.isPresent());
+    @Test
+    void findByIdAndActivadoTrue() {
+        var result = repository.findByIdAndActivadoTrue(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
 
+        assertAll(
+                () -> assertNotNull(result),
+                () -> assertEquals("DISNEY", result.get().getNombre()),
+                () -> assertTrue(result.get().getActivado())
+        );
+    }
+
+    @Test
+    void findByNombre() {
+        var result = repository.findByNombre("DISNEY");
+
+        assertAll(
+                () -> assertNotNull(result),
+                () -> assertEquals("DISNEY", result.get().getNombre()),
+                () -> assertTrue(result.get().getActivado())
+        );
     }
 }

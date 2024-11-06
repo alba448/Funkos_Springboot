@@ -13,11 +13,7 @@ public class FunkoValidator {
         this.funkoRepository = funkoRepository;
     }
 
-    /* TODO crear funcion que busque si el nombre existe
-
-    public void validateUniqueName(String nombre) {
-        if (funkoRepository.existsByNombre(nombre)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El nombre del funko ya existe");
-        }
-    }*/
+    public boolean isNameUnique(String nombre) {
+        return funkoRepository.findByNombre(nombre).isEmpty();
+    }
 }

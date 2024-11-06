@@ -1,15 +1,10 @@
-package com.example.demo.categoria.service;
+package example.demo.categoria.service;
 
-import static org.junit.jupiter.api.Assertions.*;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-
-import com.example.demo.categoria.model.Categoria;
-import com.example.demo.categoria.repository.CategoriaRepository;
+import example.demo.categoria.dto.CategoriaDto;
+import example.demo.categoria.mappers.CategoriaMapper;
+import example.demo.categoria.model.Categoria;
+import example.demo.categoria.repository.CategoriaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,95 +12,145 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
-public class CategoriaServiceImplTest {
+class CategoriaServiceImplTest {
+    @Mock
+    private CategoriaRepository repository;
 
     @Mock
-    private CategoriaRepository categoriaRepository;
+    private CategoriaMapper mapper;
 
     @InjectMocks
-    private CategoriaServiceImpl categoriaService;
+    private CategoriaServiceImpl service;
 
-    private Categoria categoria;
+    private Categoria categoriaTest;
 
     @BeforeEach
     void setUp() {
-        categoria = new Categoria();
-        categoria.setId(UUID.randomUUID());
-        categoria.setTipo("Tipo Test");
+        categoriaTest = new Categoria();
+        categoriaTest.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
+        categoriaTest.setNombre("DISNEY");
+        categoriaTest.setActivado(true);
     }
 
     @Test
     void getAll() {
-        when(categoriaRepository.findAll()).thenReturn(Collections.singletonList(categoria));
+        when(service.getAll()).thenReturn(List.of(categoriaTest));
 
-        List<Categoria> result = categoriaService.getAll();
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
+        var result = service.getAll();
 
-        verify(categoriaRepository, times(1)).findAll();
+        assertAll(
+                () -> assertEquals(1, result.size()),
+                () -> assertTrue(result.contains(categoriaTest)),
+                () -> assertEquals("DISNEY", result.getFirst().getNombre()),
+                () -> assertTrue(result.getFirst().getActivado())
+        );
+
+        verify(repository, times(1)).findAll();
     }
 
     @Test
     void getById() {
-        when(categoriaRepository.findById(any(UUID.class))).thenReturn(Optional.of(categoria));
+        when(repository.findById(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"))).thenReturn(Optional.of(categoriaTest));
 
-        Categoria result = categoriaService.getById(UUID.randomUUID());
-        assertNotNull(result);
+        var result = service.getById(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
 
-        verify(categoriaRepository, times(1)).findById(any(UUID.class));
+        assertAll(
+                () -> assertNotNull(result),
+                () -> assertEquals("DISNEY", result.getNombre()),
+                () -> assertTrue(result.getActivado())
+        );
+
+        verify(repository, times(1)).findById(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
     }
 
     @Test
-    void create() {
-        when(categoriaRepository.save(any(Categoria.class))).thenReturn(categoria);
+    void getByNombre() {
+        when(repository.findByNombre("DISNEY")).thenReturn(Optional.ofNullable(categoriaTest));
 
-        Categoria result = categoriaService.create(categoria);
-        assertNotNull(result);
+        var result = service.getByNombre("DISNEY");
 
-        verify(categoriaRepository, times(1)).save(any(Categoria.class));
+        assertAll(
+                () -> assertNotNull(result),
+                () -> assertEquals("DISNEY", result.getNombre()),
+                () -> assertTrue(result.getActivado())
+        );
+
+        verify(repository, times(1)).findByNombre("DISNEY");
+    }
+
+    @Test
+    void save() {
+        CategoriaDto nuevaCategoria = new CategoriaDto();
+        nuevaCategoria.setNombre("DISNEY");
+        nuevaCategoria.setActivado(true);
+
+        Categoria categoria = new Categoria();
+        categoria.setNombre(nuevaCategoria.getNombre());
+        categoria.setActivado(nuevaCategoria.getActivado());
+
+        when(mapper.toCategoria(nuevaCategoria)).thenReturn(categoria);
+        when(repository.save(categoria)).thenReturn(categoria);
+
+        var result = service.save(nuevaCategoria);
+
+        assertAll(
+                () -> assertNotNull(result),
+                () -> assertEquals("DISNEY", result.getNombre()),
+                () -> assertTrue(result.getActivado())
+        );
+
+        verify(repository, times(1)).save(categoria);
+        verify(mapper, times(1)).toCategoria(nuevaCategoria);
     }
 
     @Test
     void update() {
-        Categoria updatedCategoria = new Categoria();
-        updatedCategoria.setId(UUID.randomUUID());
+        CategoriaDto updatedCategoria = new CategoriaDto();
+        updatedCategoria.setNombre("DISNEY");
+        updatedCategoria.setActivado(true);
 
-        updatedCategoria.setTipo("Updated Tipo");
+        when(repository.findById(updatedCategoria.getId())).thenReturn(Optional.ofNullable(mapper.toCategoria(updatedCategoria)));
+        when(repository.save(mapper.toCategoria(updatedCategoria))).thenReturn(mapper.toCategoria(updatedCategoria));
 
-        when(categoriaRepository.findById(any(UUID.class))).thenReturn(Optional.of(categoria));
-        when(categoriaRepository.save(any(Categoria.class))).thenReturn(updatedCategoria);
+        var result = service.update(updatedCategoria.getId(), updatedCategoria);
 
-        Categoria result = categoriaService.update(UUID.randomUUID(), updatedCategoria);
-        assertNotNull(result);
+        assertAll(
+                () -> assertNotNull(result),
+                () -> assertEquals(updatedCategoria.getId(), result.getId()),
+                () -> assertEquals("SUPERHEROES", result.getNombre()),
+                () -> assertTrue(result.getActivado())
+        );
 
-        verify(categoriaRepository, times(1)).findById(any(UUID.class));
-        verify(categoriaRepository, times(1)).save(any(Categoria.class));
+        verify(repository, times(1)).findById(updatedCategoria.getId());
+        verify(repository, times(1)).save(mapper.toCategoria(updatedCategoria));
     }
 
     @Test
     void delete() {
-        when(categoriaRepository.findByIdAndActivaTrue(any(UUID.class))).thenReturn(Optional.of(categoria));
+        CategoriaDto nuevaCategoria = new CategoriaDto();
+        nuevaCategoria.setId(UUID.randomUUID());
+        nuevaCategoria.setNombre("SERIE");
+        nuevaCategoria.setActivado(true);
 
-        Categoria result = categoriaService.delete(UUID.randomUUID());
-        assertNotNull(result);
-        verify(categoriaRepository, times(1)).findByIdAndActivaTrue(any(UUID.class));
-        verify(categoriaRepository, times(1)).deleteById(any(UUID.class));
-    }
+        when(repository.findById(nuevaCategoria.getId())).thenReturn(Optional.of(new Categoria()));
 
-    @Test
-    void getByTipo() {
-        when(categoriaRepository.findByTipo(anyString())).thenReturn(Collections.singletonList(categoria));
+        var result = service.delete(nuevaCategoria.getId(), nuevaCategoria);
 
-        List<Categoria> result = categoriaService.getByTipo("Tipo Test");
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
+        assertAll(
+                () -> assertNotNull(result),
+                () -> assertEquals(nuevaCategoria.getNombre(), result.getNombre().toString()),
+                () -> assertTrue(result.getActivado())
+        );
 
-        verify(categoriaRepository, times(1)).findByTipo(anyString());
+        verify(repository, times(1)).findById(nuevaCategoria.getId());
+        verify(repository, times(1)).deleteById(nuevaCategoria.getId());
     }
 }

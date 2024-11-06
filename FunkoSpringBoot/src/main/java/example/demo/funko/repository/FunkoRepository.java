@@ -5,13 +5,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-
+import java.util.Optional;
 
 
 @Repository
 public interface FunkoRepository extends JpaRepository<Funko, Long> {
-
-    List<Funko> findByNombreContainingIgnoreCase(String nombre);
-    List<Funko> findByCategoria(String categoria);
-
+    Optional<Funko> findByNombre(String nombre);
 }

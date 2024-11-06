@@ -16,5 +16,5 @@ public class FunkoDto {
         @Max(value = 50, message = "El precio debe ser menor que 50")
         Double precio;
         @NotNull(message = "La categoria no puede un campo vacio")
-        TipoCategoria categoria;
+        String categoria;
 }
