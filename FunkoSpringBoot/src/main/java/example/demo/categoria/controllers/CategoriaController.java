@@ -32,27 +32,27 @@ public class CategoriaController {
         return ResponseEntity.ok(service.getAll());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Categoria> getById(@PathVariable UUID id) {
+    @GetMapping("{id}")
+    public ResponseEntity<Categoria> getById(@PathVariable String id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
     @PostMapping
     public ResponseEntity<Categoria> save(@Valid @RequestBody CategoriaDto categoriaDto) {
-        var res = service.save(categoriaDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(res);
+        var result = service.save(categoriaDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<Categoria> update(@PathVariable UUID id, @RequestBody CategoriaDto categoriaDto) {
-        var res = service.update(id, categoriaDto);
-        return ResponseEntity.ok(res);
+    @PutMapping("{id}")
+    public ResponseEntity<Categoria> update(@PathVariable String id, @RequestBody CategoriaDto categoriaDto) {
+        var result = service.update(id, categoriaDto);
+        return ResponseEntity.ok(result);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Categoria> delete(@PathVariable UUID id, @RequestBody CategoriaDto categoriaDto) {
-        var res = service.delete(id, categoriaDto);
-        return ResponseEntity.ok(res);
+    @PatchMapping("{id}")
+    public ResponseEntity<Categoria> delete(@PathVariable String id, @RequestBody CategoriaDto categoriaDto) {
+        var result = service.delete(id, categoriaDto);
+        return ResponseEntity.ok(result);
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)

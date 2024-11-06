@@ -26,9 +26,10 @@ class CategoriaRepositoryTest {
     @BeforeEach
     void setUp() {
         categoriaTest = new Categoria();
-        categoriaTest.setId(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
-        categoriaTest.setNombre("DISNEY");
+        categoriaTest.setId(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
+        categoriaTest.setNombre("CategoriaTest");
         categoriaTest.setActivado(true);
+
         entityManager.merge(categoriaTest);
         entityManager.flush();
     }
@@ -41,7 +42,7 @@ class CategoriaRepositoryTest {
                 () -> assertNotNull(result),
                 () -> {
                     if (result.isPresent()) {
-                        assertEquals("DISNEY", result.get().getNombre());
+                        assertEquals("CategoriaTest", result.get().getNombre());
                         assertTrue(result.get().getActivado());
                     }
                 }
@@ -62,13 +63,13 @@ class CategoriaRepositoryTest {
 
     @Test
     void findByIdAndActivadoTrue() {
-        var result = repository.findByIdAndActivadoTrue(UUID.fromString("12d45756-3895-49b2-90d3-c4a12d5ee081"));
+        var result = repository.findByIdAndActivadoTrue(UUID.fromString("4182d617-ec89-4fbc-be95-85e461778766"));
 
         assertAll(
                 () -> assertNotNull(result),
                 () -> {
                     if (result.isPresent()) {
-                        assertEquals("DISNEY", result.get().getNombre());
+                        assertEquals("CategoriaTest", result.get().getNombre());
                         assertTrue(result.get().getActivado());
                     }
                 }
@@ -89,11 +90,11 @@ class CategoriaRepositoryTest {
 
     @Test
     void findByNombre() {
-        var result = repository.findByNombre("DISNEY");
+        var result = repository.findByNombre("CategoriaTest");
 
         assertAll(
                 () -> assertNotNull(result),
-                () -> assertEquals("DISNEY", result.get().getNombre()),
+                () -> assertEquals("CategoriaTest", result.get().getNombre()),
                 () -> assertTrue(result.get().getActivado())
         );
     }
