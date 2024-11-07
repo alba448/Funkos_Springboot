@@ -9,13 +9,15 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class FunkoDto{
-        @NotBlank(message = "El nombre no puede estar vacio")
+public class FunkoDto {
+        @NotBlank(message = "El nombre no puede ser un campo vacio")
         String nombre;
-        @Min(value = 0)
-        @Max(value = 50)
+
+        @Min(value = 0, message = "El precio debe ser mayor que 0")
+        @Max(value = 50, message = "El precio debe ser menor que 50")
         @NotNull(message = "El precio no puede ser un campo nulo")
         Double precio;
-        @NotNull(message = "La categoria no puede estar vacia")
+
+        @NotBlank(message = "La categoria no puede ser un campo vacio")
         String categoria;
 }
