@@ -27,102 +27,109 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.management.Notification;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Slf4j
 @Service
+@Slf4j
 @CacheConfig(cacheNames = {"funkos"})
 public class FunkoServiceImpl implements FunkoService{
     private final FunkoRepository repository;
     private final FunkoMapper mapper;
     private final CategoriaService categoriaService;
+    private final FunkoValidator validator;
     private final WebSocketConfig webSocketConfig;
     private WebSocketHandler webSocketHandler;
     private final FunkoNotificationMapper notificacionMapper;
-    private ObjectMapper objectMapper;
-    private FunkoValidator validator;
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    public FunkoServiceImpl(FunkoRepository repository, FunkoMapper mapper, CategoriaService categoriaService, WebSocketConfig webSocketConfig, FunkoNotificationMapper notificacionMapper, FunkoValidator validator) {
+    public FunkoServiceImpl(FunkoRepository repository, FunkoMapper mapper, CategoriaService categoriaService, FunkoValidator validator, WebSocketConfig webSocketConfig, FunkoNotificationMapper notificacionMapper) {
         this.repository = repository;
         this.mapper = mapper;
         this.categoriaService = categoriaService;
+        this.validator = validator;
         this.webSocketConfig = webSocketConfig;
         webSocketHandler = webSocketConfig.webSocketHandler();
         objectMapper = new ObjectMapper();
         this.notificacionMapper = notificacionMapper;
-        this.validator = validator;
     }
 
     @Override
     public List<Funko> getAll() {
+        log.info("Buscando todos los funkos");
         return repository.findAll();
     }
 
     @Cacheable
     @Override
     public Funko getById(String id) {
-        if (!validator.isIdValid(String.valueOf(id))) {
+        log.info("Buscando funko con id: {}", id);
+        if (!validator.isIdValid(id)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El id no es valido. Debe ser de tipo Long");
         }
-        return repository.findById(Long.valueOf(id)).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El Funko con id " + id + " no se ha encontrado.")
+        return repository.findById(Long.parseLong(id)).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe el funko con id " + id)
         );
     }
 
+
+    @Cacheable
     @Override
     public Funko getByNombre(String nombre) {
+        log.info("Buscando funko llamado: {}", nombre);
         return repository.findByNombre(nombre).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El funko " + nombre + " no existe")
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El funko llamado " + nombre + " no existe")
         );
     }
 
     @CachePut
     @Override
     public Funko save(FunkoDto funkoDto) {
-        var categoria = categoriaService.getByNombre(funkoDto.getCategoria().toUpperCase());
-        if (!validator.isNameUnique(funkoDto.getNombre())) {
+        log.info("Guardando nuevo funko llamado: {}", funkoDto.getNombre());
+        var categoria = categoriaService.getByNombre(funkoDto.getCategoria());
+        if (repository.findByNombre(funkoDto.getNombre()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre del funko ya existe");
         }
-        var funkoSaved = repository.save(mapper.toFunko(funkoDto, categoria));
-        onChange(Notificacion.Tipo.CREATE, funkoSaved);
-        return funkoSaved;
+        var funko = repository.save(mapper.toFunko(funkoDto, categoria));
+        onChange(Notificacion.Tipo.CREATE, funko);
+        return funko;
     }
 
     @CachePut
     @Override
     public Funko update(String id, FunkoDto funkoDto) {
-        if (!validator.isIdValid(String.valueOf(id))) {
+        log.info("Actualizando funko con id: {}", id);
+        if (!validator.isIdValid(id)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El id no es valido. Debe ser de tipo Long");
         }
-
-        var res = repository.findById(Long.valueOf(id)).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El Funko con id " + id + " no se ha encontrado.")
+        var res = repository.findById(Long.parseLong(id)).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe el funko con id " + id)
         );
-        if (!validator.isNameUnique(funkoDto.getNombre())) {
+        if (repository.findByNombre(funkoDto.getNombre()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre del funko ya existe");
         }
         var categoria = categoriaService.getByNombre(funkoDto.getCategoria());
         res.setNombre(funkoDto.getNombre());
         res.setPrecio(funkoDto.getPrecio());
         res.setCategoria(categoria);
-        var funkoUpdated = repository.save(res);
-        onChange(Notificacion.Tipo.UPDATE, funkoUpdated);
-        return funkoUpdated;
+        var funko = repository.save(res);
+        onChange(Notificacion.Tipo.UPDATE, funko);
+        return funko;
     }
 
     @CacheEvict
     @Override
     public Funko delete(String id) {
-        if (!validator.isIdValid(String.valueOf(id))) {
+        log.info("Borrando funko con id: {}", id);
+        if (!validator.isIdValid(id)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El id no es valido. Debe ser de tipo Long");
         }
-
-        Funko funko = repository.findById(Long.valueOf(id)).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El Funko con id " + id + " no se ha encontrado.")
+        Funko funko = repository.findById(Long.parseLong(id)).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe el funko con id " + id)
         );
-        repository.deleteById(Long.valueOf(id));
+        repository.deleteById(Long.parseLong(id));
         onChange(Notificacion.Tipo.DELETE, funko);
         return funko;
     }
@@ -136,14 +143,14 @@ public class FunkoServiceImpl implements FunkoService{
         }
 
         try {
-            Notificacion<FunkoNotificationDto> notificacion = new Notificacion<>(
+            Notificacion<FunkoNotificationDto> notification = new Notificacion<>(
                     "FUNKOS",
                     tipo,
                     notificacionMapper.toFunkoNotificationDto(data),
                     LocalDateTime.now().toString()
             );
 
-            String json = objectMapper.writeValueAsString((notificacion));
+            String json = objectMapper.writeValueAsString((notification));
 
             log.info("Enviando mensaje a los clientes ws");
             Thread senderThread = new Thread(() -> {

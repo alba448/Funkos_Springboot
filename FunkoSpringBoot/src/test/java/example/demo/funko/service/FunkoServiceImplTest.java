@@ -14,6 +14,8 @@ import example.demo.notifications.mapper.FunkoNotificationMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -42,6 +44,9 @@ class FunkoServiceImplTest {
     @Mock
     private FunkoValidator validator;
 
+    @InjectMocks
+    private FunkoServiceImpl service;
+
     @Mock
     private WebSocketConfig webSocketConfig;
 
@@ -50,9 +55,8 @@ class FunkoServiceImplTest {
     @Mock
     private FunkoNotificationMapper notificacionMapper;
 
-
-    @InjectMocks
-    private FunkoServiceImpl service;
+    @Captor
+    private ArgumentCaptor<Funko> funkoCaptor;
 
     private Funko funkoTest;
     private Categoria categoriaTest;
@@ -68,6 +72,7 @@ class FunkoServiceImplTest {
         funkoTest.setNombre("FunkoTest");
         funkoTest.setPrecio(10.00);
         funkoTest.setCategoria(categoriaTest);
+
         service.setWebSocketHandler(webSocketHandler);
     }
 
@@ -186,7 +191,7 @@ class FunkoServiceImplTest {
         nuevoFunko.setCategoria(nuevaCategoria);
 
         when(categoriaService.getByNombre(nuevaCategoria.getNombre())).thenReturn(nuevaCategoria);
-        when(validator.isNameUnique(nuevoFunkoDto.getNombre())).thenReturn(true);
+        when(repository.findByNombre(nuevoFunkoDto.getNombre())).thenReturn(Optional.empty());
         when(mapper.toFunko(nuevoFunkoDto, nuevaCategoria)).thenReturn(nuevoFunko);
         when(repository.save(nuevoFunko)).thenReturn(nuevoFunko);
         doNothing().when(webSocketHandler).sendMessage(any());
@@ -199,9 +204,10 @@ class FunkoServiceImplTest {
                 () -> assertEquals(nuevaCategoria, result.getCategoria())
         );
 
-        verify(repository, times(1)).save(nuevoFunko);
-        verify(mapper, times(1)).toFunko(nuevoFunkoDto, nuevaCategoria);
         verify(categoriaService, times(1)).getByNombre(nuevaCategoria.getNombre());
+        verify(repository, times(1)).findByNombre(nuevoFunko.getNombre());
+        verify(mapper, times(1)).toFunko(nuevoFunkoDto, nuevaCategoria);
+        verify(repository, times(1)).save(nuevoFunko);
     }
 
     @Test
@@ -242,8 +248,13 @@ class FunkoServiceImplTest {
         nuevoFunkoDto.setPrecio(10.00);
         nuevoFunkoDto.setCategoria(nuevaCategoria.getNombre());
 
+        Funko nuevoFunko = new Funko();
+        nuevoFunko.setNombre("FunkoTest");
+        nuevoFunko.setPrecio(10.00);
+        nuevoFunko.setCategoria(nuevaCategoria);
+
         when(categoriaService.getByNombre(nuevaCategoria.getNombre())).thenReturn(nuevaCategoria);
-        when(validator.isNameUnique(nuevoFunkoDto.getNombre())).thenReturn(false);
+        when(repository.findByNombre(nuevoFunkoDto.getNombre())).thenReturn(Optional.of(nuevoFunko));
 
         ResponseStatusException thrown = assertThrows(
                 ResponseStatusException.class, () -> service.save(nuevoFunkoDto)
@@ -253,7 +264,7 @@ class FunkoServiceImplTest {
         assertEquals("El nombre del funko ya existe", thrown.getReason());
 
         verify(categoriaService, times(1)).getByNombre(nuevaCategoria.getNombre());
-        verify(validator, times(1)).isNameUnique(nuevoFunkoDto.getNombre());
+        verify(repository, times(1)).findByNombre(nuevoFunkoDto.getNombre());
     }
 
     @Test
@@ -276,7 +287,7 @@ class FunkoServiceImplTest {
 
         when(validator.isIdValid("2")).thenReturn(true);
         when(repository.findById(2L)).thenReturn(Optional.of(updatedFunko));
-        when(validator.isNameUnique(updatedFunkoDto.getNombre())).thenReturn(true);
+        when(repository.findByNombre(updatedFunkoDto.getNombre())).thenReturn(Optional.empty());
         when(categoriaService.getByNombre(updatedFunkoDto.getCategoria())).thenReturn(updatedCategoria);
         when(repository.save(updatedFunko)).thenReturn(updatedFunko);
         doNothing().when(webSocketHandler).sendMessage(any());
@@ -293,7 +304,7 @@ class FunkoServiceImplTest {
 
         verify(validator, times(1)).isIdValid("2");
         verify(repository, times(1)).findById(2L);
-        verify(validator, times(1)).isNameUnique(updatedFunkoDto.getNombre());
+        verify(repository, times(1)).findByNombre(updatedFunkoDto.getNombre());
         verify(repository, times(1)).save(updatedFunko);
         verify(categoriaService, times(1)).getByNombre(updatedCategoria.getNombre());
     }
@@ -374,7 +385,7 @@ class FunkoServiceImplTest {
 
         when(validator.isIdValid("2")).thenReturn(true);
         when(repository.findById(2L)).thenReturn(Optional.of(updatedFunko));
-        when(validator.isNameUnique(updatedFunkoDto.getNombre())).thenReturn(false);
+        when(repository.findByNombre(updatedFunkoDto.getNombre())).thenReturn(Optional.of(updatedFunko));
 
         ResponseStatusException thrown = assertThrows(
                 ResponseStatusException.class, () -> service.update("2", updatedFunkoDto)
@@ -385,7 +396,7 @@ class FunkoServiceImplTest {
 
         verify(validator, times(1)).isIdValid("2");
         verify(repository, times(1)).findById(2L);
-        verify(validator, times(1)).isNameUnique(updatedFunkoDto.getNombre());
+        verify(repository, times(1)).findByNombre(updatedFunkoDto.getNombre());
 
     }
 
@@ -409,7 +420,7 @@ class FunkoServiceImplTest {
 
         when(validator.isIdValid("2")).thenReturn(true);
         when(repository.findById(2L)).thenReturn(Optional.of(updatedFunko));
-        when(validator.isNameUnique(updatedFunkoDto.getNombre())).thenReturn(true);
+        when(repository.findByNombre(updatedFunkoDto.getNombre())).thenReturn(Optional.empty());
         when(categoriaService.getByNombre(updatedCategoria.getNombre())).thenThrow(
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "La categoria CategoriaTest no existe")
         );
@@ -423,7 +434,7 @@ class FunkoServiceImplTest {
 
         verify(validator, times(1)).isIdValid("2");
         verify(repository, times(1)).findById(2L);
-        verify(validator, times(1)).isNameUnique(updatedFunkoDto.getNombre());
+        verify(repository, times(1)).findByNombre(updatedFunkoDto.getNombre());
         verify(categoriaService, times(1)).getByNombre(updatedCategoria.getNombre());
     }
 
@@ -432,6 +443,7 @@ class FunkoServiceImplTest {
         when(validator.isIdValid("1")).thenReturn(true);
         when(repository.findById(1L)).thenReturn(Optional.of(funkoTest));
         doNothing().when(webSocketHandler).sendMessage(any());
+
 
         var result = service.delete("1");
 
