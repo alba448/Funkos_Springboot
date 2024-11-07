@@ -38,6 +38,9 @@ class StorageControllerTest {
     private final String endpoint = "/funkos/files";
 
     @MockBean
+    private HttpServletRequest request;
+
+    @MockBean
     private Resource resource;
 
     @BeforeEach
@@ -45,38 +48,19 @@ class StorageControllerTest {
         MockitoAnnotations.openMocks(this);
     }
 
-    @Test
-    public void testServeFile_FileNotFound() throws Exception {
-        String filename = "nonexistentfile.txt";
-
-        when(storageService.loadAsResource(anyString())).thenThrow(new StorageNotFound("File not found"));
-        MockHttpServletResponse response = mvc.perform(
-                        get(endpoint + "/" + filename)
-                                .accept(MediaType.APPLICATION_JSON))
-                .andReturn().getResponse();
-
-        assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatus());
-        verify(storageService, times(1)).loadAsResource(filename);
-    }
-
-   /* @Test
+    /*@Test
     void serveFile() throws Exception {
         String filename = "test-image3.png";
 
-        InputStream mockInputStream = getClass().getClassLoader().getResourceAsStream("test-image3.png");
-
-        assertNotNull(mockInputStream);
-
         Resource mockResource = mock(Resource.class);
-
+        InputStream mockInputStream = new ByteArrayInputStream("mock content".getBytes());
         when(mockResource.getInputStream()).thenReturn(mockInputStream);
-        when(mockResource.exists()).thenReturn(true);
 
         when(storageService.loadAsResource(filename)).thenReturn(mockResource);
 
         MockHttpServletResponse response = mvc.perform(
                         get(endpoint + "/" + filename)
-                                .accept(MediaType.IMAGE_PNG))
+                                .accept(MediaType.APPLICATION_JSON))
                 .andReturn().getResponse();
 
         assertAll(
@@ -85,17 +69,14 @@ class StorageControllerTest {
         );
 
         verify(storageService, times(1)).loadAsResource(filename);
-    }
+    }*/
 
-    @Test
+    /*@Test
     void serveFileThrowsException() throws Exception {
-        String filename = "test-image3.png";
-
-        Resource resource = mock(Resource.class);
-
-        when(resource.getInputStream()).thenThrow(new IOException("No se puede determinar el tipo de fichero"));
+        String filename = "test-image3.kei";
 
         when(storageService.loadAsResource(filename)).thenReturn(resource);
+        when(resource.getInputStream()).thenThrow(new IOException("Unable to determine file type"));
 
         MockHttpServletResponse response = mvc.perform(
                         get(endpoint + "/" + filename)
@@ -110,7 +91,17 @@ class StorageControllerTest {
         verify(storageService, times(1)).loadAsResource(filename);
     }*/
 
+    @Test
+    public void testServeFile_FileNotFound() throws Exception {
+        String filename = "nonexistentfile.txt";
 
+        when(storageService.loadAsResource(anyString())).thenThrow(new StorageNotFound("File not found"));
+        MockHttpServletResponse response = mvc.perform(
+                        get(endpoint + "/" + filename)
+                                .accept(MediaType.APPLICATION_JSON))
+                .andReturn().getResponse();
 
-
+        assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatus());
+        verify(storageService, times(1)).loadAsResource(filename);
+    }
 }
